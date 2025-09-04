@@ -1,5 +1,5 @@
 // API service for order management
-const API_BASE_URL = 'https://b3ff65296f25.ngrok-free.app';
+const API_BASE_URL = 'https://az.lytortech.com';
 
 export interface Order {
   id: number;
@@ -14,6 +14,10 @@ export interface Order {
     title: string;
     price: number;
   };
+  name:string;
+  email:string;
+  phone:string;
+  address:string;
   quantity: number;
   totalAmount: number;
   contactDetails: string;

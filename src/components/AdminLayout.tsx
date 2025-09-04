@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Palette, 
-  Plus, 
-  Menu, 
+import {
+  LayoutDashboard,
+  Palette,
+  Plus,
+  Menu,
   X,
   BarChart3,
   Settings,
   Package,
   ShoppingBag,
-  ShoppingCart
+  ShoppingCart,ClipboardList
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -23,7 +23,9 @@ const navigation = [
   { name: 'Add Product', href: '/admin/products/create', icon: ShoppingBag },
   { name: 'Orders', href: '/admin/orders', icon: ShoppingCart },
   { name: 'Custom Requests', href: '/admin/custom-requests', icon: Settings },
+  { name: 'Seller Application Requests', href: '/admin/sellerApplicationRequests', icon: ClipboardList },
   { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
+
 ];
 
 export function AdminLayout() {
@@ -118,15 +120,15 @@ export function AdminLayout() {
             >
               <Menu className="w-5 h-5" />
             </Button>
-            
+
             <div className="flex items-center space-x-4">
               <div className="hidden sm:block">
                 <p className="text-sm text-muted-foreground">
-                  {new Date().toLocaleDateString('en-US', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
+                  {new Date().toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
                   })}
                 </p>
               </div>

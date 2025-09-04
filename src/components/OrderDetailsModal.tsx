@@ -47,15 +47,23 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <span className="text-sm font-medium text-muted-foreground">Name:</span>
-                <p className="font-medium">{order.user.name}</p>
+                <p className="font-medium">{order.name || 'N/A'}</p>
               </div>
               <div>
                 <span className="text-sm font-medium text-muted-foreground">Email:</span>
-                <p className="font-medium">{order.user.email}</p>
+                <p className="font-medium">{order.email || 'N/A'}</p>
+              </div>
+              <div>
+                <span className="text-sm font-medium text-muted-foreground">Phone:</span>
+                <p className="font-medium">{order.phone || 'N/A'}</p>
+              </div>
+              <div>
+                <span className="text-sm font-medium text-muted-foreground">Address:</span>
+                <p className="font-medium whitespace-pre-wrap">{order.address || 'N/A'}</p>
               </div>
               <div className="md:col-span-2">
                 <span className="text-sm font-medium text-muted-foreground">Contact Details:</span>
-                <p className="font-medium">{order.contactDetails}</p>
+                <p className="font-medium">{order.contactDetails || 'N/A'}</p>
               </div>
             </div>
           </div>
@@ -65,12 +73,20 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
             <h3 className="font-semibold text-lg mb-3">Design Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <span className="text-sm font-medium text-muted-foreground">Design Title:</span>
-                <p className="font-medium">{order.design.title}</p>
+                <span className="text-sm font-medium text-muted-foreground">Design Name:</span>
+                <p className="font-medium">{order.design?.designName || 'N/A'}</p>
+              </div>
+              <div>
+                <span className="text-sm font-medium text-muted-foreground">Category:</span>
+                <p className="font-medium">{order.design?.category || 'N/A'}</p>
+              </div>
+              <div>
+                <span className="text-sm font-medium text-muted-foreground">Subcategory:</span>
+                <p className="font-medium">{order.design?.subcategory || 'N/A'}</p>
               </div>
               <div>
                 <span className="text-sm font-medium text-muted-foreground">Unit Price:</span>
-                <p className="font-medium">₹{order.design.price}</p>
+                <p className="font-medium">₹{order.design?.price || 0}</p>
               </div>
               <div>
                 <span className="text-sm font-medium text-muted-foreground">Quantity:</span>
@@ -80,6 +96,12 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                 <span className="text-sm font-medium text-muted-foreground">Total Amount:</span>
                 <p className="font-medium text-lg">₹{order.totalAmount}</p>
               </div>
+              {order.design?.description && (
+                <div className="md:col-span-2">
+                  <span className="text-sm font-medium text-muted-foreground">Description:</span>
+                  <p className="font-medium">{order.design.description}</p>
+                </div>
+              )}
             </div>
           </div>
 

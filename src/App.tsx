@@ -13,6 +13,7 @@ import AdminOrders from "./pages/AdminOrders";
 import AdminCustomRequests from "./pages/AdminCustomRequests";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import SellerApplicationRequests from "./pages/SellerApplicationsRequests";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="orders" element={<AdminOrders />} />
             <Route path="custom-requests" element={<AdminCustomRequests />} />
             <Route path="analytics" element={<AdminDashboard />} />
+            <Route path="sellerApplicationRequests" element={<SellerApplicationRequests/>} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

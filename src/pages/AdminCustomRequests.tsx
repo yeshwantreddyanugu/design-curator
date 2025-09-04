@@ -7,7 +7,6 @@ import {
   UpdateStatusRequest 
 } from '@/services/customRequestApi';
 import { CustomRequestDetailsModal } from '@/components/CustomRequestDetailsModal';
-import { StatusUpdateModal } from '@/components/StatusUpdateModal';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -28,6 +27,13 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { 
   Search, 
   Filter, 
@@ -62,6 +68,140 @@ const getStatusCounts = (requests: CustomDesignRequest[]) => {
   }, {} as Record<string, number>);
 };
 
+// StatusUpdateModal Component (embedded)
+interface StatusUpdateModalProps {
+  request: CustomDesignRequest | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onUpdate: (requestId: number, status: string, adminNotes: string) => Promise<void>;
+}
+
+const statusOptions = [
+  { value: 'PENDING', label: 'Pending' },
+  { value: 'IN_PROGRESS', label: 'In Progress' },
+  { value: 'COMPLETED', label: 'Completed' },
+  { value: 'REJECTED', label: 'Rejected' },
+];
+
+function StatusUpdateModal({ request, isOpen, onClose, onUpdate }: StatusUpdateModalProps) {
+  const [selectedStatus, setSelectedStatus] = useState<string>('');
+  const [adminNotes, setAdminNotes] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  // Reset form when modal opens/closes or request changes
+  useEffect(() => {
+    if (request && isOpen) {
+      setSelectedStatus(request.status);
+      setAdminNotes(request.adminNotes || '');
+    }
+  }, [request, isOpen]);
+
+  const handleSubmit = async () => {
+    if (!request || !selectedStatus) return;
+
+    try {
+      setIsUpdating(true);
+      await onUpdate(request.id, selectedStatus, adminNotes);
+      onClose();
+    } catch (error) {
+      // Error handling is done in parent component
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleClose = () => {
+    if (!isUpdating) {
+      onClose();
+    }
+  };
+
+  if (!request) return null;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Edit className="w-4 h-4" />
+            Update Request Status
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          {/* Request Summary */}
+          <div className="bg-muted/50 p-3 rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium">Request #{request.id}</span>
+              <Badge className={getStatusColor(request.status)}>
+                {request.status.replace('_', ' ')}
+              </Badge>
+            </div>
+            <p className="text-sm text-muted-foreground">{request.designName}</p>
+            <p className="text-xs text-muted-foreground">{request.user.name}</p>
+          </div>
+
+          {/* Status Selection */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">New Status</label>
+            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                {statusOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${
+                        option.value === 'PENDING' ? 'bg-orange-500' :
+                        option.value === 'IN_PROGRESS' ? 'bg-blue-500' :
+                        option.value === 'COMPLETED' ? 'bg-green-500' :
+                        'bg-red-500'
+                      }`} />
+                      {option.label}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Admin Notes */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Admin Notes</label>
+            <textarea
+              placeholder="Add notes about this status update..."
+              value={adminNotes}
+              onChange={(e) => setAdminNotes(e.target.value)}
+              rows={4}
+              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+            />
+            <p className="text-xs text-muted-foreground">
+              These notes will be visible to other administrators
+            </p>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button 
+            variant="outline" 
+            onClick={handleClose}
+            disabled={isUpdating}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleSubmit}
+            disabled={!selectedStatus || isUpdating}
+          >
+            {isUpdating ? 'Updating...' : 'Update Status'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function AdminCustomRequests() {
   const [requests, setRequests] = useState<CustomDesignRequest[]>([]);
   const [filteredRequests, setFilteredRequests] = useState<CustomDesignRequest[]>([]);
@@ -77,14 +217,22 @@ export default function AdminCustomRequests() {
     try {
       setLoading(true);
       const data = await fetchCustomRequests();
-      setRequests(data);
-      setFilteredRequests(data);
+      console.log('API Response:', data); // Debug log
+      
+      // Ensure data is an array
+      const requestsArray = Array.isArray(data) ? data : [];
+      
+      setRequests(requestsArray);
+      setFilteredRequests(requestsArray);
     } catch (error) {
+      console.error('Load requests error:', error);
       toast({
         title: "Error",
         description: "Failed to load custom design requests",
         variant: "destructive",
       });
+      setRequests([]);
+      setFilteredRequests([]);
     } finally {
       setLoading(false);
     }
@@ -95,15 +243,23 @@ export default function AdminCustomRequests() {
   }, []);
 
   useEffect(() => {
-    let filtered = requests;
+    let filtered = requests.filter(request => 
+      request && 
+      request.user && 
+      request.user.name && 
+      request.user.email &&
+      request.designName &&
+      request.category &&
+      request.status
+    );
 
     // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(request =>
-        request.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        request.user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        request.designName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        request.category.toLowerCase().includes(searchTerm.toLowerCase())
+        request.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        request.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        request.designName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        request.category?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -257,46 +413,52 @@ export default function AdminCustomRequests() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredRequests.map((request) => (
-                <TableRow key={request.id}>
-                  <TableCell className="font-medium">#{request.id}</TableCell>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{request.user.name}</div>
-                      <div className="text-sm text-muted-foreground">{request.user.email}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell>{request.designName}</TableCell>
-                  <TableCell>{request.category}</TableCell>
-                  <TableCell>{request.quantity}</TableCell>
-                  <TableCell>
-                    <Badge className={getStatusColor(request.status)}>
-                      {request.status.replace('_', ' ')}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {new Date(request.createdAt).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleViewDetails(request)}
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEditStatus(request)}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {filteredRequests.map((request) => {
+                if (!request || !request.user) {
+                  return null;
+                }
+                
+                return (
+                  <TableRow key={request.id}>
+                    <TableCell className="font-medium">#{request.id}</TableCell>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{request.user?.name || 'N/A'}</div>
+                        <div className="text-sm text-muted-foreground">{request.user?.email || 'N/A'}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>{request.designName || 'N/A'}</TableCell>
+                    <TableCell>{request.category || 'N/A'}</TableCell>
+                    <TableCell>{request.quantity || 0}</TableCell>
+                    <TableCell>
+                      <Badge className={getStatusColor(request.status)}>
+                        {request.status?.replace('_', ' ') || 'Unknown'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {request.createdAt ? new Date(request.createdAt).toLocaleDateString() : 'N/A'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleViewDetails(request)}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditStatus(request)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </Card>
@@ -304,65 +466,71 @@ export default function AdminCustomRequests() {
 
       {/* Mobile Card View */}
       <div className="lg:hidden grid gap-4">
-        {filteredRequests.map((request) => (
-          <Card key={request.id}>
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <CardTitle className="text-lg">#{request.id}</CardTitle>
-                <Badge className={getStatusColor(request.status)}>
-                  {request.status.replace('_', ' ')}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <User className="w-4 h-4 text-muted-foreground" />
-                <div>
-                  <div className="font-medium">{request.user.name}</div>
-                  <div className="text-sm text-muted-foreground">{request.user.email}</div>
+        {filteredRequests.map((request) => {
+          if (!request || !request.user) {
+            return null;
+          }
+          
+          return (
+            <Card key={request.id}>
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <CardTitle className="text-lg">#{request.id}</CardTitle>
+                  <Badge className={getStatusColor(request.status)}>
+                    {request.status?.replace('_', ' ') || 'Unknown'}
+                  </Badge>
                 </div>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <Package className="w-4 h-4 text-muted-foreground" />
-                <div>
-                  <div className="font-medium">{request.designName}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {request.category} • Qty: {request.quantity}
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <User className="w-4 h-4 text-muted-foreground" />
+                  <div>
+                    <div className="font-medium">{request.user?.name || 'N/A'}</div>
+                    <div className="text-sm text-muted-foreground">{request.user?.email || 'N/A'}</div>
                   </div>
                 </div>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <Calendar className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">
-                  {new Date(request.createdAt).toLocaleDateString()}
-                </span>
-              </div>
-              
-              <div className="flex gap-2 pt-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleViewDetails(request)}
-                  className="flex-1"
-                >
-                  <Eye className="w-4 h-4 mr-2" />
-                  View Details
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleEditStatus(request)}
-                  className="flex-1"
-                >
-                  <Edit className="w-4 h-4 mr-2" />
-                  Update Status
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                
+                <div className="flex items-center space-x-2">
+                  <Package className="w-4 h-4 text-muted-foreground" />
+                  <div>
+                    <div className="font-medium">{request.designName || 'N/A'}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {request.category || 'N/A'} • Qty: {request.quantity || 0}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">
+                    {request.createdAt ? new Date(request.createdAt).toLocaleDateString() : 'N/A'}
+                  </span>
+                </div>
+                
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleViewDetails(request)}
+                    className="flex-1"
+                  >
+                    <Eye className="w-4 h-4 mr-2" />
+                    View Details
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEditStatus(request)}
+                    className="flex-1"
+                  >
+                    <Edit className="w-4 h-4 mr-2" />
+                    Update Status
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {/* Empty State */}

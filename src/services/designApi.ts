@@ -1,5 +1,5 @@
 // API service for design management
-const API_BASE_URL = 'https://b3ff65296f25.ngrok-free.app';
+const API_BASE_URL = 'https://az.lytortech.com';
 
 export interface Design {
   id: number;
@@ -130,7 +130,7 @@ export const designApi = {
 
   // Update design
   updateDesign: (id: number, data: Partial<CreateDesignRequest>): Promise<Design> =>
-    apiCall(`/api/admin/designs/${id}`, 'PUT', data),
+    apiCall(`/api/admin/designs/${id}/update-with-images`, 'PUT', data),
 
   // Update design with images
   updateDesignWithImages: (id: number, designData: Partial<CreateDesignRequest>, files: File[], replaceAllImages = false): Promise<Design> => {

@@ -1,5 +1,5 @@
 // API service for product management
-const API_BASE_URL = 'https://b3ff65296f25.ngrok-free.app';
+const API_BASE_URL = 'https://az.lytortech.com';
 
 export interface Product {
   id: number;

@@ -55,9 +55,9 @@ const AdminOrders: React.FC = () => {
     return orders.filter(order => {
       const matchesSearch = searchTerm === '' || 
         order.orderId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.design.title.toLowerCase().includes(searchTerm.toLowerCase());
+        order.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.design?.designName?.toLowerCase().includes(searchTerm.toLowerCase());
       
       const matchesStatus = statusFilter === 'ALL' || order.status === statusFilter;
       
@@ -97,9 +97,9 @@ const AdminOrders: React.FC = () => {
       headers.join(','),
       ...filteredOrders.map(order => [
         order.orderId,
-        order.user.name,
-        order.user.email,
-        order.design.title,
+        order.name || 'N/A',
+        order.email || 'N/A',
+        order.design?.designName || 'N/A',
         order.quantity,
         order.totalAmount,
         order.status,
@@ -295,13 +295,13 @@ const AdminOrders: React.FC = () => {
                       <TableCell className="font-mono text-sm">{order.orderId}</TableCell>
                       <TableCell>
                         <div>
-                          <div className="font-medium">{order.user.name}</div>
-                          <div className="text-sm text-muted-foreground">{order.user.email}</div>
+                          <div className="font-medium">{order.name || 'N/A'}</div>
+                          <div className="text-sm text-muted-foreground">{order.email || 'N/A'}</div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="max-w-32 truncate" title={order.design.title}>
-                          {order.design.title}
+                        <div className="max-w-32 truncate" title={order.design?.designName || 'N/A'}>
+                          {order.design?.designName || 'N/A'}
                         </div>
                       </TableCell>
                       <TableCell>{order.quantity}</TableCell>

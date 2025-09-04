@@ -1,14 +1,22 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { designApi, Design, formatPrice } from '@/services/designApi';
-import EditDesignModal from '@/components/EditDesignModal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import {
   Table,
   TableBody,
@@ -41,20 +49,887 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { 
-  Search, 
-  Filter, 
-  MoreHorizontal, 
-  Edit, 
-  Trash2, 
+import {
+  Search,
+  Filter,
+  MoreHorizontal,
+  Edit,
+  Trash2,
   Eye,
   Crown,
   TrendingUp,
   Sparkles,
   Plus,
-  Loader2
+  Loader2,
+  Save,
+  DollarSign,
+  Palette,
+  Tags,
+  Calendar,
+  User,
+  Upload,
+  X,AlertTriangle, Info
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+
+const CATEGORIES = [
+  'Womenswear',
+  'Menswear',
+  'Giftware/Stationery',
+  'Interiors/Home',
+  'Kidswear',
+  'Swimwear',
+  'Activewear',
+  'Archive'
+];
+
+const SUBCATEGORIES = [
+  'Floral',
+  'World',
+  'Abstract',
+  'Stripes',
+  'Tropical',
+  'Placements',
+  'Camouflage',
+  'Nature',
+  '2 & 3 Colour',
+  'Geometric',
+  'Animals/Birds',
+  'Conversationals',
+  'Checks',
+  'Paisleys',
+  'Traditional',
+  'Texture',
+  'Animal Skins',
+  'Border'
+];
+
+const LICENSE_TYPES = ['Personal', 'Commercial', 'Extended'];
+const AVAILABLE_COLORS = [
+  'Red', 'Blue', 'Black', 'White', 'Green',
+  'Yellow', 'Purple', 'Pink', 'Orange', 'Gray'
+];
+
+// View Design Modal Component
+function ViewDesignModal({ design, open, onOpenChange }: { design: Design | null; open: boolean; onOpenChange: (open: boolean) => void }) {
+  if (!design) return null;
+
+  console.log('ViewDesignModal - Design data:', design);
+
+  const pricing = formatPrice(design.price, design.discountPrice);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center space-x-2">
+            <Eye className="w-5 h-5" />
+            <span>View Design - {design.designName}</span>
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-6">
+          {/* Images */}
+          {design.imageUrls && design.imageUrls.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="font-medium flex items-center space-x-2">
+                <Palette className="w-4 h-4" />
+                <span>Images</span>
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {design.imageUrls.map((url, index) => (
+                  <div key={index} className="aspect-square rounded-lg overflow-hidden bg-muted">
+                    <img
+                      src={url}
+                      alt={`Design ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Basic Information */}
+            <div className="space-y-4">
+              <h3 className="font-medium flex items-center space-x-2">
+                <Palette className="w-4 h-4" />
+                <span>Basic Information</span>
+              </h3>
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Design Name</Label>
+                  <p className="text-foreground">{design.designName}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Category</Label>
+                  <p className="text-foreground">{design.category}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Subcategory</Label>
+                  <p className="text-foreground">{design.subcategory}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Designer</Label>
+                  <p className="text-foreground">{design.designedBy || 'Not specified'}</p>
+                </div>
+                {design.description && (
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Description</Label>
+                    <p className="text-foreground">{design.description}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Pricing & Status */}
+            <div className="space-y-4">
+              <h3 className="font-medium flex items-center space-x-2">
+                <DollarSign className="w-4 h-4" />
+                <span>Pricing & Status</span>
+              </h3>
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Price</Label>
+                  <div className="space-y-1">
+                    {pricing.hasDiscount ? (
+                      <>
+                        <p className="font-semibold text-success">{pricing.discount}</p>
+                        <p className="text-sm text-muted-foreground line-through">{pricing.original}</p>
+                      </>
+                    ) : (
+                      <p className="font-semibold text-foreground">{pricing.original}</p>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">License Type</Label>
+                  <p className="text-foreground">{design.licenseType}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Status</Label>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {design.isPremium && (
+                      <Badge variant="outline" className="text-warning border-warning">
+                        <Crown className="w-3 h-3 mr-1" />
+                        Premium
+                      </Badge>
+                    )}
+                    {design.isTrending && (
+                      <Badge variant="outline" className="text-success border-success">
+                        <TrendingUp className="w-3 h-3 mr-1" />
+                        Trending
+                      </Badge>
+                    )}
+                    {design.isNewArrival && (
+                      <Badge variant="outline" className="text-accent border-accent">
+                        <Sparkles className="w-3 h-3 mr-1" />
+                        New Arrival
+                      </Badge>
+                    )}
+                    {!design.isPremium && !design.isTrending && !design.isNewArrival && (
+                      <Badge variant="outline">Regular</Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Tags & Colors */}
+          <div className="space-y-4">
+            <h3 className="font-medium flex items-center space-x-2">
+              <Tags className="w-4 h-4" />
+              <span>Tags & Colors</span>
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {design.tags && design.tags.length > 0 && (
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Tags</Label>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {design.tags.map((tag, index) => (
+                      <Badge key={index} variant="secondary">{tag}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {design.availableColors && design.availableColors.length > 0 && (
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Available Colors</Label>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {design.availableColors.map((color, index) => (
+                      <Badge key={index} variant="secondary">{color}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Dates */}
+          <div className="space-y-4">
+            <h3 className="font-medium flex items-center space-x-2">
+              <Calendar className="w-4 h-4" />
+              <span>Timeline</span>
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">Created</Label>
+                <p className="text-foreground">{new Date(design.createdAt).toLocaleDateString()}</p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">Last Updated</Label>
+                <p className="text-foreground">{new Date(design.updatedAt).toLocaleDateString()}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Edit Design Modal Component
+function EditDesignModal({ design, open, onOpenChange }: { design: Design | null; open: boolean; onOpenChange: (open: boolean) => void }) {
+  const [formData, setFormData] = useState({
+    designName: '',
+    category: '',
+    subcategory: '',
+    price: 0,
+    discountPrice: 0,
+    availableColors: [] as string[],
+    tags: [] as string[],
+    description: '',
+    licenseType: 'Commercial',
+    isPremium: false,
+    isTrending: false,
+    isNewArrival: false,
+    designedBy: '',
+  });
+
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [tagsInput, setTagsInput] = useState('');
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [newImages, setNewImages] = useState<{ file: File; preview: string }[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Initialize form data when design changes
+  React.useEffect(() => {
+    if (design) {
+      console.log('EditDesignModal - Initializing with design:', design);
+
+      // Parse categories if they are comma-separated
+      const categories = design.category ? design.category.split(',').map(c => c.trim()) : [];
+
+      setFormData({
+        designName: design.designName || '',
+        category: design.category || '',
+        subcategory: design.subcategory || '',
+        price: design.price || 0,
+        discountPrice: design.discountPrice || 0,
+        availableColors: design.availableColors || [],
+        tags: design.tags || [],
+        description: design.description || '',
+        licenseType: design.licenseType || 'Commercial',
+        isPremium: design.isPremium || false,
+        isTrending: design.isTrending || false,
+        isNewArrival: design.isNewArrival || false,
+        designedBy: design.designedBy || '',
+      });
+
+      setSelectedCategories(categories);
+      setTagsInput(design.tags ? design.tags.join(', ') : '');
+      setExistingImages(design.imageUrls || []);
+      setNewImages([]);
+
+      console.log('EditDesignModal - Form initialized with:', {
+        categories,
+        subcategory: design.subcategory,
+        tags: design.tags,
+        existingImages: design.imageUrls?.length || 0
+      });
+    }
+  }, [design]);
+
+  const handleImageUpload = async (files: FileList) => {
+    console.log('EditDesignModal - Uploading new images:', files.length);
+    setIsUploading(true);
+    const newImageFiles: { file: File; preview: string }[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file.type.startsWith('image/')) {
+        const preview = URL.createObjectURL(file);
+        newImageFiles.push({ file, preview });
+      }
+    }
+
+    const totalImages = existingImages.length + newImages.length + newImageFiles.length;
+    if (totalImages > 6) {
+      const allowedNew = 6 - existingImages.length - newImages.length;
+      if (allowedNew > 0) {
+        setNewImages(prev => [...prev, ...newImageFiles.slice(0, allowedNew)]);
+        toast({
+          title: "Image limit reached",
+          description: `Only ${allowedNew} images were added. Maximum 6 images allowed.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Cannot add more images",
+          description: "Maximum 6 images allowed. Remove some existing images first.",
+          variant: "destructive",
+        });
+      }
+    } else {
+      setNewImages(prev => [...prev, ...newImageFiles]);
+    }
+
+    setIsUploading(false);
+    console.log('EditDesignModal - New images added:', newImageFiles.length);
+  };
+
+  const removeExistingImage = (index: number) => {
+    console.log('EditDesignModal - Removing existing image at index:', index);
+    setExistingImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removeNewImage = (index: number) => {
+    console.log('EditDesignModal - Removing new image at index:', index);
+    setNewImages(prev => {
+      const newImagesCopy = [...prev];
+      URL.revokeObjectURL(newImagesCopy[index].preview);
+      newImagesCopy.splice(index, 1);
+      return newImagesCopy;
+    });
+  };
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) => designApi.updateDesign(id, data),
+    onSuccess: () => {
+      console.log('EditDesignModal - Update successful');
+      queryClient.invalidateQueries({ queryKey: ['designs'] });
+      queryClient.invalidateQueries({ queryKey: ['design-stats'] });
+      toast({
+        title: "Design updated successfully",
+        description: "Your design has been updated.",
+      });
+      onOpenChange(false);
+    },
+    onError: (error) => {
+      console.error('EditDesignModal - Update failed:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update design. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleCategoryToggle = (category: string) => {
+    console.log('EditDesignModal - Category toggle:', category);
+    setSelectedCategories(prev => {
+      const newCategories = prev.includes(category)
+        ? prev.filter(c => c !== category)
+        : [...prev, category];
+
+      // Update formData with comma-separated string
+      setFormData(prevData => ({
+        ...prevData,
+        category: newCategories.join(', ')
+      }));
+
+      console.log('EditDesignModal - Updated categories:', newCategories);
+      return newCategories;
+    });
+  };
+
+  const handleSubcategorySelect = (subcategory: string) => {
+    console.log('EditDesignModal - Subcategory selected:', subcategory);
+    setFormData(prev => ({
+      ...prev,
+      subcategory: subcategory
+    }));
+  };
+
+  const handleColorToggle = (color: string) => {
+    console.log('EditDesignModal - Color toggle:', color);
+    setFormData(prev => ({
+      ...prev,
+      availableColors: prev.availableColors.includes(color)
+        ? prev.availableColors.filter(c => c !== color)
+        : [...prev.availableColors, color],
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!design) return;
+
+    console.log('EditDesignModal - Form submission started');
+
+    // Check only mandatory fields
+    if (!formData.designName || !formData.category || !formData.subcategory || !formData.price) {
+      console.log('EditDesignModal - Validation failed:', {
+        designName: formData.designName,
+        category: formData.category,
+        subcategory: formData.subcategory,
+        price: formData.price
+      });
+
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields: Design Name, Category, Subcategory, and Price.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Process tags - split by comma and clean up
+    const tags = tagsInput.split(',').map(tag => tag.trim()).filter(Boolean);
+
+    // Process available colors - ensure it's an array
+    let availableColors = [];
+    if (formData.availableColors) {
+      if (Array.isArray(formData.availableColors)) {
+        availableColors = formData.availableColors;
+      } else if (typeof formData.availableColors === 'string') {
+        // If it's a string, split by comma
+        availableColors = (formData.availableColors as string)
+          .split(',')
+          .map(color => color.trim())
+          .filter(Boolean);
+      }
+    }
+
+    // Clean JSON data matching backend expectations exactly
+    const designData = {
+      designName: formData.designName,
+      category: formData.category,
+      subcategory: formData.subcategory,
+      price: Number(formData.price),
+      discountPrice: formData.discountPrice ? Number(formData.discountPrice) : null,
+      availableColors: availableColors,
+      tags: tags,
+      description: formData.description || '',
+      licenseType: formData.licenseType || 'Commercial',
+      isPremium: Boolean(formData.isPremium),
+      isTrending: Boolean(formData.isTrending),
+      isNewArrival: Boolean(formData.isNewArrival),
+      designedBy: formData.designedBy || ''
+    };
+
+    console.log('EditDesignModal - Submitting data (backend format):', JSON.stringify(designData, null, 2));
+
+    // Create FormData for multipart request
+    const formDataToSend = new FormData();
+
+    // Add design data as JSON string
+    formDataToSend.append('designData', JSON.stringify(designData));
+
+    // Add new image files if any
+    if (newImages.length > 0) {
+      newImages.forEach((image, index) => {
+        formDataToSend.append('files', image.file);
+      });
+      console.log('EditDesignModal - Added new images to form data:', newImages.length);
+    }
+
+    // Add existing image URLs to preserve them
+    if (existingImages.length > 0) {
+      formDataToSend.append('existingImages', JSON.stringify(existingImages));
+      console.log('EditDesignModal - Added existing images to form data:', existingImages.length);
+    }
+
+    // Log FormData contents for debugging
+    console.log('EditDesignModal - FormData contents:');
+    for (let [key, value] of formDataToSend.entries()) {
+      if (value instanceof File) {
+        console.log(`${key}: File(${value.name}, ${value.size} bytes)`);
+      } else {
+        console.log(`${key}: ${value}`);
+      }
+    }
+
+    try {
+      // Call the API with FormData instead of JSON
+      await updateMutation.mutateAsync({
+        id: design.id,
+        data: formDataToSend, // Send FormData instead of JSON object
+      });
+    } catch (error) {
+      console.error('EditDesignModal - Submit error:', error);
+      // Error handling is already done in the mutation's onError callback
+    }
+  };
+
+  if (!design) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center space-x-2">
+            <Edit className="w-5 h-5" />
+            <span>Edit Design - {design.designName}</span>
+          </DialogTitle>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Basic Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Palette className="w-5 h-5" />
+                  <span>Basic Information</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-designName">Design Name *</Label>
+                  <Input
+                    id="edit-designName"
+                    value={formData.designName}
+                    onChange={(e) => setFormData(prev => ({ ...prev, designName: e.target.value }))}
+                    placeholder="Enter design name"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Categories * (Select multiple)</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {CATEGORIES.map((category) => (
+                      <Badge
+                        key={category}
+                        variant={selectedCategories.includes(category) ? "default" : "outline"}
+                        className="cursor-pointer justify-center py-2 text-xs"
+                        onClick={() => handleCategoryToggle(category)}
+                      >
+                        {category}
+                      </Badge>
+                    ))}
+                  </div>
+                  {selectedCategories.length > 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      Selected: {selectedCategories.join(', ')}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Subcategory * (Select one)</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {SUBCATEGORIES.map((subcategory) => (
+                      <Badge
+                        key={subcategory}
+                        variant={formData.subcategory === subcategory ? "default" : "outline"}
+                        className="cursor-pointer justify-center py-2 text-xs"
+                        onClick={() => handleSubcategorySelect(subcategory)}
+                      >
+                        {subcategory}
+                      </Badge>
+                    ))}
+                  </div>
+                  {formData.subcategory && (
+                    <p className="text-sm text-muted-foreground">
+                      Selected: {formData.subcategory}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-designedBy">Designer</Label>
+                  <Input
+                    id="edit-designedBy"
+                    value={formData.designedBy}
+                    onChange={(e) => setFormData(prev => ({ ...prev, designedBy: e.target.value }))}
+                    placeholder="Designer name"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-description">Description</Label>
+                  <Textarea
+                    id="edit-description"
+                    value={formData.description}
+                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Describe your design..."
+                    rows={3}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Pricing & Options */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <DollarSign className="w-5 h-5" />
+                  <span>Pricing & Options</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-price">Price *</Label>
+                  <Input
+                    id="edit-price"
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    value={formData.price || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
+                    placeholder="100"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-discountPrice">Discount Price</Label>
+                  <Input
+                    id="edit-discountPrice"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.discountPrice || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, discountPrice: parseFloat(e.target.value) || 0 }))}
+                    placeholder="10"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-licenseType">License Type</Label>
+                  <Select
+                    value={formData.licenseType}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, licenseType: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LICENSE_TYPES.map((license) => (
+                        <SelectItem key={license} value={license}>
+                          {license}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-3">
+                  <Label>Status Options</Label>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="edit-isPremium"
+                        checked={formData.isPremium}
+                        onCheckedChange={(checked) =>
+                          setFormData(prev => ({ ...prev, isPremium: !!checked }))
+                        }
+                      />
+                      <Label htmlFor="edit-isPremium" className="flex items-center space-x-2 cursor-pointer">
+                        <Crown className="w-4 h-4 text-warning" />
+                        <span>Premium</span>
+                      </Label>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="edit-isTrending"
+                        checked={formData.isTrending}
+                        onCheckedChange={(checked) =>
+                          setFormData(prev => ({ ...prev, isTrending: !!checked }))
+                        }
+                      />
+                      <Label htmlFor="edit-isTrending" className="flex items-center space-x-2 cursor-pointer">
+                        <TrendingUp className="w-4 h-4 text-success" />
+                        <span>Trending</span>
+                      </Label>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="edit-isNewArrival"
+                        checked={formData.isNewArrival}
+                        onCheckedChange={(checked) =>
+                          setFormData(prev => ({ ...prev, isNewArrival: !!checked }))
+                        }
+                      />
+                      <Label htmlFor="edit-isNewArrival" className="flex items-center space-x-2 cursor-pointer">
+                        <Sparkles className="w-4 h-4 text-accent" />
+                        <span>New Arrival</span>
+                      </Label>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Images Management */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Eye className="w-5 h-5" />
+                <span>Images ({newImages.length}/6)</span>
+              </CardTitle>
+              {existingImages.length > 0 && newImages.length === 0 && (
+                <div className="bg-amber-100 border border-amber-300 text-amber-800 px-3 py-2 rounded-md text-sm">
+                  <AlertTriangle className="w-4 h-4 inline mr-2" />
+                  Warning: All current images will be removed. Adding atleast one image is mandatory
+                </div>
+              )}
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* New Images Only */}
+              {newImages.length > 0 && (
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">New Images (Will Replace All Current Images)</Label>
+                  <p className="text-sm text-muted-foreground">
+                    These images will replace all existing images. Current images will be permanently removed.
+                  </p>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {newImages.map((image, index) => (
+                      <div key={`new-${index}`} className="relative group">
+                        <div className="aspect-square rounded-lg overflow-hidden bg-muted">
+                          <img
+                            src={image.preview}
+                            alt={`New ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => removeNewImage(index)}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Add Images */}
+              {newImages.length < 6 && (
+                <div
+                  className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer"
+                  onClick={() => document.getElementById('edit-image-upload')?.click()}
+                >
+                  <input
+                    id="edit-image-upload"
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={(e) => e.target.files && handleImageUpload(e.target.files)}
+                    className="hidden"
+                  />
+                  <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                  <h3 className="font-medium text-foreground mb-1">Add New Images</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {6 - newImages.length} slots available
+                  </p>
+                  {existingImages.length > 0 && (
+                    <p className="text-sm text-amber-600 mt-2">
+                      <AlertTriangle className="w-4 h-4 inline mr-1" />
+                      Current images will be replaced
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Current Images Info (Hidden but informative) */}
+              {existingImages.length > 0 && (
+                <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                  <div className="flex items-start space-x-2">
+                    <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <div className="text-sm text-blue-800">
+                      <p className="font-medium">Current Images: {existingImages.length}</p>
+                      <p>All current images will be removed unless you add new ones.</p>
+                      <p className="text-xs mt-1">
+                        To keep current images, you must re-upload them as new images.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {isUploading && (
+                <div className="flex items-center space-x-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="text-sm text-muted-foreground">Uploading images...</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Tags & Colors */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Tags className="w-5 h-5" />
+                <span>Tags & Colors</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-tags">Tags</Label>
+                <Input
+                  id="edit-tags"
+                  value={tagsInput}
+                  onChange={(e) => setTagsInput(e.target.value)}
+                  placeholder="modern, trendy, abstract (comma separated)"
+                />
+                <p className="text-sm text-muted-foreground">
+                  Separate tags with commas
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <Label>Available Colors</Label>
+                <div className="grid grid-cols-5 gap-2">
+                  {AVAILABLE_COLORS.map((color) => (
+                    <Badge
+                      key={color}
+                      variant={formData.availableColors.includes(color) ? "default" : "outline"}
+                      className="cursor-pointer justify-center py-2"
+                      onClick={() => handleColorToggle(color)}
+                    >
+                      {color}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              className="bg-gradient-primary hover:opacity-90"
+              disabled={updateMutation.isPending}
+            >
+              <Save className="w-4 h-4 mr-2" />
+              {updateMutation.isPending ? 'Updating...' : 'Update Design'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export default function DesignList() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -63,10 +938,12 @@ export default function DesignList() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [designToDelete, setDesignToDelete] = useState<Design | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
   const [designToEdit, setDesignToEdit] = useState<Design | null>(null);
+  const [designToView, setDesignToView] = useState<Design | null>(null);
   const [selectedDesigns, setSelectedDesigns] = useState<number[]>([]);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
-  
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -75,9 +952,12 @@ export default function DesignList() {
     queryFn: () => designApi.getDesigns(0, 50),
   });
 
+  console.log('DesignList - Loaded designs:', designs);
+
   const deleteMutation = useMutation({
     mutationFn: designApi.deleteDesign,
     onSuccess: () => {
+      console.log('DesignList - Delete successful');
       queryClient.invalidateQueries({ queryKey: ['designs'] });
       queryClient.invalidateQueries({ queryKey: ['design-stats'] });
       toast({
@@ -88,6 +968,7 @@ export default function DesignList() {
       setDesignToDelete(null);
     },
     onError: (error) => {
+      console.error('DesignList - Delete failed:', error);
       toast({
         title: "Error",
         description: "Failed to delete design. Please try again.",
@@ -101,10 +982,12 @@ export default function DesignList() {
     onSuccess: (results) => {
       const successful = results.filter(r => r.status === 'fulfilled').length;
       const failed = results.filter(r => r.status === 'rejected').length;
-      
+
+      console.log('DesignList - Bulk delete results:', { successful, failed });
+
       queryClient.invalidateQueries({ queryKey: ['designs'] });
       queryClient.invalidateQueries({ queryKey: ['design-stats'] });
-      
+
       if (failed === 0) {
         toast({
           title: "Designs deleted",
@@ -117,11 +1000,12 @@ export default function DesignList() {
           variant: "destructive",
         });
       }
-      
+
       setSelectedDesigns([]);
       setBulkDeleteDialogOpen(false);
     },
     onError: (error) => {
+      console.error('DesignList - Bulk delete failed:', error);
       toast({
         title: "Error",
         description: "Failed to delete designs. Please try again.",
@@ -131,35 +1015,46 @@ export default function DesignList() {
   });
 
   const handleDeleteClick = (design: Design) => {
+    console.log('DesignList - Delete clicked for design:', design.id);
     setDesignToDelete(design);
     setDeleteDialogOpen(true);
   };
 
   const handleDeleteConfirm = () => {
     if (designToDelete) {
+      console.log('DesignList - Confirming delete for design:', designToDelete.id);
       deleteMutation.mutate(designToDelete.id);
     }
   };
 
   const handleEditClick = (design: Design) => {
+    console.log('DesignList - Edit clicked for design:', design.id);
     setDesignToEdit(design);
     setEditModalOpen(true);
   };
 
+  const handleViewClick = (design: Design) => {
+    console.log('DesignList - View clicked for design:', design.id);
+    setDesignToView(design);
+    setViewModalOpen(true);
+  };
+
   const handleBulkDeleteClick = () => {
     if (selectedDesigns.length > 0) {
+      console.log('DesignList - Bulk delete clicked for designs:', selectedDesigns);
       setBulkDeleteDialogOpen(true);
     }
   };
 
   const handleBulkDeleteConfirm = () => {
     if (selectedDesigns.length > 0) {
+      console.log('DesignList - Confirming bulk delete for designs:', selectedDesigns);
       bulkDeleteMutation.mutate(selectedDesigns);
     }
   };
 
   const toggleDesignSelection = (designId: number) => {
-    setSelectedDesigns(prev => 
+    setSelectedDesigns(prev =>
       prev.includes(designId)
         ? prev.filter(id => id !== designId)
         : [...prev, designId]
@@ -167,9 +1062,9 @@ export default function DesignList() {
   };
 
   const toggleAllSelection = () => {
-    setSelectedDesigns(prev => 
-      prev.length === filteredDesigns.length 
-        ? [] 
+    setSelectedDesigns(prev =>
+      prev.length === filteredDesigns.length
+        ? []
         : filteredDesigns.map(d => d.id)
     );
   };
@@ -181,10 +1076,10 @@ export default function DesignList() {
     const matchesSearch = design.designName
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
-    
+
     const matchesCategory = categoryFilter === 'all' || design.category === categoryFilter;
-    
-    const matchesStatus = 
+
+    const matchesStatus =
       statusFilter === 'all' ||
       (statusFilter === 'premium' && design.isPremium) ||
       (statusFilter === 'trending' && design.isTrending) ||
@@ -194,6 +1089,8 @@ export default function DesignList() {
   }) || [];
 
   const categories = [...new Set(designs?.map(d => d.category) || [])];
+
+  console.log('DesignList - Filtered designs:', filteredDesigns.length, 'of', designs?.length);
 
   if (isLoading) {
     return (
@@ -205,7 +1102,7 @@ export default function DesignList() {
           </div>
           <Skeleton className="h-10 w-32" />
         </div>
-        
+
         <Card>
           <CardContent className="p-6">
             <div className="space-y-4">
@@ -284,7 +1181,7 @@ export default function DesignList() {
                   ))}
                 </SelectContent>
               </Select>
-              
+
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-[130px]">
                   <SelectValue placeholder="Status" />
@@ -382,7 +1279,7 @@ export default function DesignList() {
                       </TableCell>
                       <TableCell>
                         <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted">
-                          {design.imageUrls.length > 0 ? (
+                          {design.imageUrls && design.imageUrls.length > 0 ? (
                             <img
                               src={design.imageUrls[0]}
                               alt={design.designName}
@@ -451,7 +1348,7 @@ export default function DesignList() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleViewClick(design)}>
                               <Eye className="w-4 h-4 mr-2" />
                               View Details
                             </DropdownMenuItem>
@@ -475,7 +1372,7 @@ export default function DesignList() {
                 })}
               </TableBody>
             </Table>
-            
+
             {filteredDesigns.length === 0 && (
               <div className="text-center py-12">
                 <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
@@ -492,6 +1389,13 @@ export default function DesignList() {
           </div>
         </CardContent>
       </Card>
+
+      {/* View Design Modal */}
+      <ViewDesignModal
+        design={designToView}
+        open={viewModalOpen}
+        onOpenChange={setViewModalOpen}
+      />
 
       {/* Edit Design Modal */}
       <EditDesignModal

@@ -491,7 +491,7 @@ export default function EditProductModal({ product, open, onOpenChange }: EditPr
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium">Add New Images</h3>
-                <div className="flex items-center space-x-2">
+                {/* <div className="flex items-center space-x-2">
                   <Checkbox
                     id="replaceAll"
                     checked={replaceAllImages}
@@ -500,7 +500,7 @@ export default function EditProductModal({ product, open, onOpenChange }: EditPr
                   <Label htmlFor="replaceAll" className="text-sm">
                     Replace all current images
                   </Label>
-                </div>
+                </div> */}
               </div>
 
               <div

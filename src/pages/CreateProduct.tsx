@@ -293,7 +293,7 @@ export default function CreateProduct() {
                   step="0.01"
                   min="0.01"
                   value={formData.price}
-                  onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) }))}
                   placeholder="0.00"
                   required
                 />
@@ -307,7 +307,7 @@ export default function CreateProduct() {
                   step="0.01"
                   min="0"
                   value={formData.discountPrice}
-                  onChange={(e) => setFormData(prev => ({ ...prev, discountPrice: parseFloat(e.target.value) || 0 }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, discountPrice: parseFloat(e.target.value) }))}
                   placeholder="0.00"
                 />
               </div>
@@ -319,7 +319,7 @@ export default function CreateProduct() {
                   type="number"
                   min="0"
                   value={formData.stockQuantity}
-                  onChange={(e) => setFormData(prev => ({ ...prev, stockQuantity: parseInt(e.target.value) || 0 }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, stockQuantity: parseInt(e.target.value) }))}
                   placeholder="0"
                   required
                 />

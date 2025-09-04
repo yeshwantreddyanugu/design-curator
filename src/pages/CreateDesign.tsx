@@ -40,7 +40,38 @@ interface ImageFile {
   dimensions?: { width: number; height: number };
 }
 
-const CATEGORIES = ['Fashion', 'Business', 'Digital Art', 'Sports'];
+const CATEGORIES = [
+  'Womenswear',
+  'Menswear',
+  'Giftware/Stationery',
+  'Interiors/Home',
+  'Kidswear',
+  'Swimwear',
+  'Activewear',
+  'Archive'
+];
+
+const SUBCATEGORIES = [
+  'Floral',
+  'World',
+  'Abstract',
+  'Stripes',
+  'Tropical',
+  'Placements',
+  'Camouflage',
+  'Nature',
+  '2 & 3 Colour',
+  'Geometric',
+  'Animals/Birds',
+  'Conversationals',
+  'Checks',
+  'Paisleys',
+  'Traditional',
+  'Texture',
+  'Animal Skins',
+  'Border'
+];
+
 const LICENSE_TYPES = ['Personal', 'Commercial', 'Extended'];
 const AVAILABLE_COLORS = [
   'Red', 'Blue', 'Black', 'White', 'Green', 
@@ -61,9 +92,10 @@ export default function CreateDesign() {
     isPremium: false,
     isTrending: false,
     isNewArrival: false,
-    designedBy: 'Admin',
+    designedBy: '',
   });
 
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [images, setImages] = useState<ImageFile[]>([]);
   const [tagsInput, setTagsInput] = useState('');
   const [isUploading, setIsUploading] = useState(false);
@@ -128,13 +160,37 @@ export default function CreateDesign() {
     }));
   };
 
+  const handleCategoryToggle = (category: string) => {
+    setSelectedCategories(prev => {
+      const newCategories = prev.includes(category)
+        ? prev.filter(c => c !== category)
+        : [...prev, category];
+      
+      // Update formData with comma-separated string
+      setFormData(prevData => ({
+        ...prevData,
+        category: newCategories.join(', ')
+      }));
+      
+      return newCategories;
+    });
+  };
+
+  const handleSubcategorySelect = (subcategory: string) => {
+    setFormData(prev => ({
+      ...prev,
+      subcategory: subcategory
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.designName || !formData.category || !formData.subcategory || images.length === 0) {
+    // Check only mandatory fields
+    if (!formData.designName || !formData.category || !formData.subcategory || !formData.price || images.length === 0) {
       toast({
         title: "Validation Error",
-        description: "Please fill in all required fields and upload at least one image.",
+        description: "Please fill in all required fields: Design Name, Category, Subcategory, Price, and upload at least one image.",
         variant: "destructive",
       });
       return;
@@ -144,7 +200,9 @@ export default function CreateDesign() {
     const finalFormData = {
       ...formData,
       tags,
-      discountPrice: formData.discountPrice || undefined,
+      discountPrice: formData.discountPrice || 0,
+      designedBy: formData.designedBy || '',
+      description: formData.description || '',
     };
 
     createMutation.mutate({
@@ -191,38 +249,6 @@ export default function CreateDesign() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="category">Category *</Label>
-                  <Select
-                    value={formData.category}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
-                    required
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CATEGORIES.map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="subcategory">Subcategory *</Label>
-                  <Input
-                    id="subcategory"
-                    value={formData.subcategory}
-                    onChange={(e) => setFormData(prev => ({ ...prev, subcategory: e.target.value }))}
-                    placeholder="e.g., T-Shirts, Logos"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
                   <Label htmlFor="designedBy">Designer</Label>
                   <Input
                     id="designedBy"
@@ -231,6 +257,48 @@ export default function CreateDesign() {
                     placeholder="Designer name"
                   />
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Categories * (Select multiple)</Label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {CATEGORIES.map((category) => (
+                    <Badge
+                      key={category}
+                      variant={selectedCategories.includes(category) ? "default" : "outline"}
+                      className="cursor-pointer justify-center py-2 text-xs"
+                      onClick={() => handleCategoryToggle(category)}
+                    >
+                      {category}
+                    </Badge>
+                  ))}
+                </div>
+                {selectedCategories.length > 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    Selected: {selectedCategories.join(', ')}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label>Subcategory * (Select one)</Label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {SUBCATEGORIES.map((subcategory) => (
+                    <Badge
+                      key={subcategory}
+                      variant={formData.subcategory === subcategory ? "default" : "outline"}
+                      className="cursor-pointer justify-center py-2 text-xs"
+                      onClick={() => handleSubcategorySelect(subcategory)}
+                    >
+                      {subcategory}
+                    </Badge>
+                  ))}
+                </div>
+                {formData.subcategory && (
+                  <p className="text-sm text-muted-foreground">
+                    Selected: {formData.subcategory}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -262,9 +330,9 @@ export default function CreateDesign() {
                   type="number"
                   step="0.01"
                   min="0.01"
-                  value={formData.price}
+                  value={formData.price || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
-                  placeholder="0.00"
+                  placeholder="100"
                   required
                 />
               </div>
@@ -276,9 +344,9 @@ export default function CreateDesign() {
                   type="number"
                   step="0.01"
                   min="0"
-                  value={formData.discountPrice}
+                  value={formData.discountPrice || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, discountPrice: parseFloat(e.target.value) || 0 }))}
-                  placeholder="0.00"
+                  placeholder="10"
                 />
               </div>
 
@@ -396,7 +464,7 @@ export default function CreateDesign() {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <FileImage className="w-5 h-5" />
-              <span>Images ({images.length}/6)</span>
+              <span>Images * ({images.length}/6)</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -415,7 +483,7 @@ export default function CreateDesign() {
               />
               <Upload className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-medium text-foreground mb-2">
-                {images.length >= 6 ? 'Maximum images reached' : 'Upload Images'}
+                {images.length >= 6 ? 'Maximum images reached' : 'Upload Images *'}
               </h3>
               <p className="text-muted-foreground">
                 {images.length >= 6 
