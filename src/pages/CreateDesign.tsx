@@ -30,7 +30,8 @@ import {
   ArrowLeft,
   Crown,
   TrendingUp,
-  Sparkles
+  Sparkles,
+  Plus
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -96,9 +97,17 @@ export default function CreateDesign() {
   });
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [customCategories, setCustomCategories] = useState<string[]>([]);
+  const [customSubcategories, setCustomSubcategories] = useState<string[]>([]);
+  const [customColors, setCustomColors] = useState<string[]>([]);
   const [images, setImages] = useState<ImageFile[]>([]);
   const [tagsInput, setTagsInput] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  
+  // Input states for custom additions
+  const [newCategoryInput, setNewCategoryInput] = useState('');
+  const [newSubcategoryInput, setNewSubcategoryInput] = useState('');
+  const [newColorInput, setNewColorInput] = useState('');
 
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -117,6 +126,7 @@ export default function CreateDesign() {
       navigate('/admin/designs');
     },
     onError: (error) => {
+      console.error('Design creation error:', error);
       toast({
         title: "Error",
         description: "Failed to create design. Please try again.",
@@ -151,7 +161,9 @@ export default function CreateDesign() {
     });
   };
 
+  // Enhanced color toggle to handle both predefined and custom colors
   const handleColorToggle = (color: string) => {
+    console.log('Toggling color:', color);
     setFormData(prev => ({
       ...prev,
       availableColors: prev.availableColors.includes(color)
@@ -160,7 +172,9 @@ export default function CreateDesign() {
     }));
   };
 
+  // Enhanced category toggle to handle both predefined and custom categories
   const handleCategoryToggle = (category: string) => {
+    console.log('Toggling category:', category);
     setSelectedCategories(prev => {
       const newCategories = prev.includes(category)
         ? prev.filter(c => c !== category)
@@ -176,18 +190,128 @@ export default function CreateDesign() {
     });
   };
 
+  // Enhanced subcategory select to handle both predefined and custom subcategories
   const handleSubcategorySelect = (subcategory: string) => {
+    console.log('Selecting subcategory:', subcategory);
     setFormData(prev => ({
       ...prev,
       subcategory: subcategory
     }));
   };
 
+  // Add custom category
+  const handleAddCustomCategory = () => {
+    if (newCategoryInput.trim() && !getAllCategories().includes(newCategoryInput.trim())) {
+      const newCategory = newCategoryInput.trim();
+      console.log('Adding custom category:', newCategory);
+      setCustomCategories(prev => [...prev, newCategory]);
+      handleCategoryToggle(newCategory);
+      setNewCategoryInput('');
+      toast({
+        title: "Category Added",
+        description: `"${newCategory}" has been added to categories.`,
+      });
+    } else if (getAllCategories().includes(newCategoryInput.trim())) {
+      toast({
+        title: "Category Exists",
+        description: "This category already exists.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Add custom subcategory (replaces if one exists)
+  const handleAddCustomSubcategory = () => {
+    if (newSubcategoryInput.trim() && !getAllSubcategories().includes(newSubcategoryInput.trim())) {
+      const newSubcategory = newSubcategoryInput.trim();
+      console.log('Adding custom subcategory:', newSubcategory);
+      setCustomSubcategories(prev => [...prev, newSubcategory]);
+      handleSubcategorySelect(newSubcategory);
+      setNewSubcategoryInput('');
+      toast({
+        title: "Subcategory Added",
+        description: `"${newSubcategory}" has been added and selected.`,
+      });
+    } else if (getAllSubcategories().includes(newSubcategoryInput.trim())) {
+      console.log('Subcategory exists, selecting it:', newSubcategoryInput.trim());
+      handleSubcategorySelect(newSubcategoryInput.trim());
+      setNewSubcategoryInput('');
+      toast({
+        title: "Subcategory Selected",
+        description: `"${newSubcategoryInput.trim()}" has been selected.`,
+      });
+    }
+  };
+
+  // Add custom color
+  const handleAddCustomColor = () => {
+    if (newColorInput.trim() && !getAllColors().includes(newColorInput.trim())) {
+      const newColor = newColorInput.trim();
+      console.log('Adding custom color:', newColor);
+      setCustomColors(prev => [...prev, newColor]);
+      handleColorToggle(newColor);
+      setNewColorInput('');
+      toast({
+        title: "Color Added",
+        description: `"${newColor}" has been added to available colors.`,
+      });
+    } else if (getAllColors().includes(newColorInput.trim())) {
+      toast({
+        title: "Color Exists",
+        description: "This color already exists.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Helper functions to get all categories, subcategories, and colors
+  const getAllCategories = () => [...CATEGORIES, ...customCategories];
+  const getAllSubcategories = () => [...SUBCATEGORIES, ...customSubcategories];
+  const getAllColors = () => [...AVAILABLE_COLORS, ...customColors];
+
+  // Remove custom category
+  const removeCustomCategory = (category: string) => {
+    console.log('Removing custom category:', category);
+    setCustomCategories(prev => prev.filter(c => c !== category));
+    setSelectedCategories(prev => prev.filter(c => c !== category));
+    setFormData(prev => ({
+      ...prev,
+      category: prev.category.split(', ').filter(c => c !== category).join(', ')
+    }));
+  };
+
+  // Remove custom subcategory
+  const removeCustomSubcategory = (subcategory: string) => {
+    console.log('Removing custom subcategory:', subcategory);
+    setCustomSubcategories(prev => prev.filter(s => s !== subcategory));
+    if (formData.subcategory === subcategory) {
+      setFormData(prev => ({ ...prev, subcategory: '' }));
+    }
+  };
+
+  // Remove custom color
+  const removeCustomColor = (color: string) => {
+    console.log('Removing custom color:', color);
+    setCustomColors(prev => prev.filter(c => c !== color));
+    setFormData(prev => ({
+      ...prev,
+      availableColors: prev.availableColors.filter(c => c !== color)
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('Form submission started');
+    console.log('Current form data:', formData);
+    console.log('Selected categories:', selectedCategories);
+    console.log('Custom categories:', customCategories);
+    console.log('Custom subcategories:', customSubcategories);
+    console.log('Custom colors:', customColors);
+    
     // Check only mandatory fields
     if (!formData.designName || !formData.category || !formData.subcategory || !formData.price || images.length === 0) {
+      console.log('Validation failed - missing required fields');
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields: Design Name, Category, Subcategory, Price, and upload at least one image.",
@@ -204,6 +328,9 @@ export default function CreateDesign() {
       designedBy: formData.designedBy || '',
       description: formData.description || '',
     };
+
+    console.log('Final form data:', finalFormData);
+    console.log('Image files:', images.map(img => img.file.name));
 
     createMutation.mutate({
       designData: finalFormData,
@@ -259,8 +386,11 @@ export default function CreateDesign() {
                 </div>
               </div>
 
-              <div className="space-y-2">
+              {/* Enhanced Categories Section */}
+              <div className="space-y-4">
                 <Label>Categories * (Select multiple)</Label>
+                
+                {/* Predefined Categories */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   {CATEGORIES.map((category) => (
                     <Badge
@@ -273,6 +403,57 @@ export default function CreateDesign() {
                     </Badge>
                   ))}
                 </div>
+
+                {/* Custom Categories */}
+                {customCategories.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-sm text-muted-foreground">Custom Categories</Label>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      {customCategories.map((category) => (
+                        <div key={category} className="relative group">
+                          <Badge
+                            variant={selectedCategories.includes(category) ? "default" : "outline"}
+                            className="cursor-pointer justify-center py-2 text-xs w-full pr-6"
+                            onClick={() => handleCategoryToggle(category)}
+                          >
+                            {category}
+                          </Badge>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute -top-1 -right-1 h-4 w-4 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeCustomCategory(category);
+                            }}
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Add Custom Category */}
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Add custom category"
+                    value={newCategoryInput}
+                    onChange={(e) => setNewCategoryInput(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCustomCategory())}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleAddCustomCategory}
+                    disabled={!newCategoryInput.trim()}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+
                 {selectedCategories.length > 0 && (
                   <p className="text-sm text-muted-foreground">
                     Selected: {selectedCategories.join(', ')}
@@ -280,8 +461,11 @@ export default function CreateDesign() {
                 )}
               </div>
 
-              <div className="space-y-2">
+              {/* Enhanced Subcategories Section */}
+              <div className="space-y-4">
                 <Label>Subcategory * (Select one)</Label>
+                
+                {/* Predefined Subcategories */}
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                   {SUBCATEGORIES.map((subcategory) => (
                     <Badge
@@ -294,6 +478,57 @@ export default function CreateDesign() {
                     </Badge>
                   ))}
                 </div>
+
+                {/* Custom Subcategories */}
+                {customSubcategories.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-sm text-muted-foreground">Custom Subcategories</Label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {customSubcategories.map((subcategory) => (
+                        <div key={subcategory} className="relative group">
+                          <Badge
+                            variant={formData.subcategory === subcategory ? "default" : "outline"}
+                            className="cursor-pointer justify-center py-2 text-xs w-full pr-6"
+                            onClick={() => handleSubcategorySelect(subcategory)}
+                          >
+                            {subcategory}
+                          </Badge>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute -top-1 -right-1 h-4 w-4 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeCustomSubcategory(subcategory);
+                            }}
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Add Custom Subcategory */}
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Add custom subcategory"
+                    value={newSubcategoryInput}
+                    onChange={(e) => setNewSubcategoryInput(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCustomSubcategory())}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleAddCustomSubcategory}
+                    disabled={!newSubcategoryInput.trim()}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+
                 {formData.subcategory && (
                   <p className="text-sm text-muted-foreground">
                     Selected: {formData.subcategory}
@@ -332,7 +567,7 @@ export default function CreateDesign() {
                   min="0.01"
                   value={formData.price || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
-                  placeholder="100"
+                  placeholder="0"
                   required
                 />
               </div>
@@ -346,7 +581,7 @@ export default function CreateDesign() {
                   min="0"
                   value={formData.discountPrice || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, discountPrice: parseFloat(e.target.value) || 0 }))}
-                  placeholder="10"
+                  placeholder="0"
                 />
               </div>
 
@@ -441,8 +676,11 @@ export default function CreateDesign() {
               </p>
             </div>
 
-            <div className="space-y-3">
-              <Label>Available Colors</Label>
+            {/* Enhanced Available Colors Section */}
+            <div className="space-y-4">
+              <Label>Available Colors (Select multiple)</Label>
+              
+              {/* Predefined Colors */}
               <div className="grid grid-cols-5 gap-2">
                 {AVAILABLE_COLORS.map((color) => (
                   <Badge
@@ -455,6 +693,62 @@ export default function CreateDesign() {
                   </Badge>
                 ))}
               </div>
+
+              {/* Custom Colors */}
+              {customColors.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm text-muted-foreground">Custom Colors</Label>
+                  <div className="grid grid-cols-5 gap-2">
+                    {customColors.map((color) => (
+                      <div key={color} className="relative group">
+                        <Badge
+                          variant={formData.availableColors.includes(color) ? "default" : "outline"}
+                          className="cursor-pointer justify-center py-2 w-full pr-6"
+                          onClick={() => handleColorToggle(color)}
+                        >
+                          {color}
+                        </Badge>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute -top-1 -right-1 h-4 w-4 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeCustomColor(color);
+                          }}
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Add Custom Color */}
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Add custom color"
+                  value={newColorInput}
+                  onChange={(e) => setNewColorInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCustomColor())}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleAddCustomColor}
+                  disabled={!newColorInput.trim()}
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+
+              {formData.availableColors.length > 0 && (
+                <p className="text-sm text-muted-foreground">
+                  Selected: {formData.availableColors.join(', ')}
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>

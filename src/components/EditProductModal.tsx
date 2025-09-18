@@ -34,16 +34,16 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { 
-  Upload, 
-  X, 
+import {
+  Upload,
+  X,
   Save,
   Loader2,
   Package,
   Palette,
   DollarSign,
   Shirt,
-  ShoppingBag
+  ShoppingBag, BedDouble, Home, Utensils, Lamp, Gift, Smile
 } from 'lucide-react';
 
 const CATEGORIES = {
@@ -51,7 +51,7 @@ const CATEGORIES = {
   SHOES: ['Sports', 'Casual', 'Formal', 'Kids Shoes']
 };
 const AVAILABLE_COLORS = [
-  'Black', 'White', 'Red', 'Blue', 'Green', 
+  'Black', 'White', 'Red', 'Blue', 'Green',
   'Yellow', 'Purple', 'Pink', 'Orange', 'Gray', 'Brown', 'Navy'
 ];
 const SIZES = {
@@ -61,7 +61,17 @@ const SIZES = {
 
 const editProductSchema = z.object({
   productName: z.string().min(1, 'Product name is required'),
-  productType: z.enum(['CLOTHES', 'SHOES']),
+  productType: z.enum([
+    'CLOTHES',
+    'SHOES',
+    'FURNITURE',
+    'FURNISHINGS',
+    'LIFESTYLE',
+    'KITCHEN_DINING',
+    'DECOR_ACCESSORIES',
+    'GIFTING',
+    'KIDS'
+  ]),
   category: z.string().min(1, 'Category is required'),
   subcategory: z.string().min(1, 'Subcategory is required'),
   price: z.number().min(0.01, 'Price must be greater than 0'),
@@ -201,7 +211,7 @@ export default function EditProductModal({ product, open, onOpenChange }: EditPr
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleImageUpload(e.dataTransfer.files);
     }
@@ -257,30 +267,61 @@ export default function EditProductModal({ product, open, onOpenChange }: EditPr
                   name="productType"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Product Type</FormLabel>
+                      <FormLabel>Product Type *</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue />
+                            <SelectValue placeholder="Select product type" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="CLOTHES">
+                          <SelectItem value="FURNITURE">
                             <div className="flex items-center gap-2">
-                              <Shirt className="w-4 h-4" />
-                              CLOTHES
+                              <BedDouble className="w-4 h-4" />
+                              Furniture
                             </div>
                           </SelectItem>
-                          <SelectItem value="SHOES">
+                          <SelectItem value="FURNISHINGS">
                             <div className="flex items-center gap-2">
-                              <ShoppingBag className="w-4 h-4" />
-                              SHOES
+                              <Home className="w-4 h-4" />
+                              Furnishings
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="LIFESTYLE">
+                            <div className="flex items-center gap-2">
+                              <Package className="w-4 h-4" />
+                              Lifestyle
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="KITCHEN_DINING">
+                            <div className="flex items-center gap-2">
+                              <Utensils className="w-4 h-4" />
+                              Kitchen &amp; Dining
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="DECOR_ACCESSORIES">
+                            <div className="flex items-center gap-2">
+                              <Lamp className="w-4 h-4" />
+                              Decor Accessories
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="GIFTING">
+                            <div className="flex items-center gap-2">
+                              <Gift className="w-4 h-4" />
+                              Gifting
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="KIDS">
+                            <div className="flex items-center gap-2">
+                              <Smile className="w-4 h-4" />
+                              Kids
                             </div>
                           </SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
                     </FormItem>
+
                   )}
                 />
 
@@ -293,17 +334,9 @@ export default function EditProductModal({ product, open, onOpenChange }: EditPr
                         <FormLabel>Category</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
+                            <Input {...field} />
                           </FormControl>
-                          <SelectContent>
-                            {availableCategories.map((category) => (
-                              <SelectItem key={category} value={category}>
-                                {category}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
+
                         </Select>
                         <FormMessage />
                       </FormItem>
@@ -504,9 +537,8 @@ export default function EditProductModal({ product, open, onOpenChange }: EditPr
               </div>
 
               <div
-                className={`border-2 border-dashed rounded-lg p-6 text-center transition-smooth cursor-pointer ${
-                  dragActive ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
-                }`}
+                className={`border-2 border-dashed rounded-lg p-6 text-center transition-smooth cursor-pointer ${dragActive ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+                  }`}
                 onDragEnter={handleDrag}
                 onDragLeave={handleDrag}
                 onDragOver={handleDrag}
@@ -524,8 +556,8 @@ export default function EditProductModal({ product, open, onOpenChange }: EditPr
                 />
                 <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
                 <p className="text-sm text-muted-foreground">
-                  {newImages.length >= 5 
-                    ? 'Maximum images reached' 
+                  {newImages.length >= 5
+                    ? 'Maximum images reached'
                     : 'Drag and drop or click to add new images (max 5)'}
                 </p>
               </div>
@@ -564,8 +596,8 @@ export default function EditProductModal({ product, open, onOpenChange }: EditPr
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={updateMutation.isPending}
                 className="bg-gradient-primary hover:opacity-90"
               >
