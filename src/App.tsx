@@ -14,6 +14,8 @@ import AdminCustomRequests from "./pages/AdminCustomRequests";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import SellerApplicationRequests from "./pages/SellerApplicationsRequests";
+import BannerImageUploadPage from "./pages/BannerImageUpload";
+import ContactUs from './pages/ContactUs';
 
 const queryClient = new QueryClient();
 
@@ -35,6 +37,8 @@ const App = () => (
             <Route path="custom-requests" element={<AdminCustomRequests />} />
             <Route path="analytics" element={<AdminDashboard />} />
             <Route path="sellerApplicationRequests" element={<SellerApplicationRequests/>} />
+            <Route path="contactus" element={<ContactUs />} />
+            <Route path="bannerImageUpload" element={<BannerImageUploadPage />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

@@ -10,7 +10,7 @@ import {
   Settings,
   Package,
   ShoppingBag,
-  ShoppingCart,ClipboardList
+  ShoppingCart,ClipboardList,MessageSquare,Image
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -25,6 +25,8 @@ const navigation = [
   { name: 'Custom Requests', href: '/admin/custom-requests', icon: Settings },
   { name: 'Seller Application Requests', href: '/admin/sellerApplicationRequests', icon: ClipboardList },
   { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
+  { name: 'Banner Image Upload', href: '/admin/bannerImageUpload', icon: Image },
+  { name: 'Contact Us Form', href: '/admin/contactus', icon: MessageSquare },
 
 ];
 

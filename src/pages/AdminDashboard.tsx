@@ -281,57 +281,9 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        {/* Product Quick Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button className="w-full justify-start" variant="outline" asChild>
-              <a href="/admin/products/create">
-                <ShoppingBag className="w-4 h-4 mr-2" />
-                Add New Product
-              </a>
-            </Button>
-            <Button className="w-full justify-start" variant="outline" asChild>
-              <a href="/admin/create">
-                <Palette className="w-4 h-4 mr-2" />
-                Create New Design
-              </a>
-            </Button>
-            <Button className="w-full justify-start" variant="outline" asChild>
-              <a href="/admin/products">
-                <Package className="w-4 h-4 mr-2" />
-                View All Products
-              </a>
-            </Button>
-          </CardContent>
-        </Card>
+        
 
-        {/* System Status */}
-        <Card>
-          <CardHeader>
-            <CardTitle>System Overview</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm">Total Items</span>
-              <span className="font-semibold">{(stats?.totalDesigns || 0) + (productStats?.totalProducts || 0)}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm">Low Stock Alert</span>
-              <Badge variant={productStats?.lowStockProducts ? "destructive" : "secondary"}>
-                {productStats?.lowStockProducts || 0} items
-              </Badge>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm">Categories</span>
-              <span className="font-semibold">
-                {Object.keys({...stats?.categoryWiseCount, ...productStats?.categoryWiseCount}).length}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+       
       </div>
 
       {/* Recent activity placeholder */}
