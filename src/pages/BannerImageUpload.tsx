@@ -120,7 +120,7 @@ export default function BannerImageUploadPage() {
     }
 
     try {
-      const response = await fetch('/api/banners', {
+      const response = await fetch('https://az.lytortech.com/api/banners', {
         method: 'POST',
         body: uploadFormData // Don't set Content-Type header, browser will set it with boundary
       });
@@ -172,7 +172,7 @@ export default function BannerImageUploadPage() {
     console.log('Banner Management: Deleting banner with ID:', currentBanner.id);
 
     try {
-      const response = await fetch('/api/banners', {
+      const response = await fetch('https://az.lytortech.com/api/banners', {
         method: 'DELETE'
       });
 

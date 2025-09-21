@@ -34,7 +34,7 @@ export default function ContactPage() {
     
     try {
       console.log('Fetching contacts from /api/contact');
-      const response = await fetch('/api/contact');
+      const response = await fetch('https://az.lytortech.com/api/contact');
       
       if (response.ok) {
         const data = await response.json();
@@ -60,7 +60,7 @@ export default function ContactPage() {
     
     try {
       console.log(`Deleting contact with ID: ${id}`);
-      const response = await fetch(`/api/contact/${id}`, {
+      const response = await fetch(`https://az.lytortech.com/api/contact/${id}`, {
         method: 'DELETE'
       });
       
@@ -302,7 +302,7 @@ export default function ContactPage() {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex gap-2 pt-2">
+                  {/* <div className="flex gap-2 pt-2">
                     <Button 
                       variant="outline" 
                       size="sm" 
@@ -321,7 +321,7 @@ export default function ContactPage() {
                       <Phone className="w-3 h-3 mr-1" />
                       Call
                     </Button>
-                  </div>
+                  </div> */}
                 </CardContent>
               </Card>
             ))}
