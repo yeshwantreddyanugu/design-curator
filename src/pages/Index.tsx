@@ -14,7 +14,7 @@ const Index = () => {
   const [step, setStep] = useState('email'); // 'email' or 'otp'
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
-  const email = 'lytortech@gmail.com'; // Fixed email
+  const email = 'azacreation@gmail.com'; // Fixed email
 
   console.log('🚀 Index Component Initialized');
   console.log('📧 Email:', email);
