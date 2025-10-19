@@ -34,6 +34,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   Upload,
   X,
@@ -43,8 +44,16 @@ import {
   Palette,
   DollarSign,
   Shirt,
-  ShoppingBag, BedDouble, Home, Utensils, Lamp, Gift, Smile
+  ShoppingBag, 
+  BedDouble, 
+  Home, 
+  Utensils, 
+  Lamp, 
+  Gift, 
+  Smile,
+  AlertTriangle
 } from 'lucide-react';
+
 
 const CATEGORIES = {
   CLOTHES: ['Men\'s Wear', 'Women\'s Wear', 'Kids Wear', 'Accessories'],
@@ -58,6 +67,7 @@ const SIZES = {
   CLOTHES: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
   SHOES: ['6', '7', '8', '9', '10', '11', '12']
 };
+
 
 const editProductSchema = z.object({
   productName: z.string().min(1, 'Product name is required'),
@@ -82,7 +92,9 @@ const editProductSchema = z.object({
   stockQuantity: z.number().min(0, 'Stock must be 0 or greater'),
 });
 
+
 type EditProductForm = z.infer<typeof editProductSchema>;
+
 
 interface EditProductModalProps {
   product: Product;
@@ -90,11 +102,13 @@ interface EditProductModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+
 interface ImageFile {
   file: File;
   preview: string;
   dimensions?: { width: number; height: number };
 }
+
 
 export default function EditProductModal({ product, open, onOpenChange }: EditProductModalProps) {
   const [newImages, setNewImages] = useState<ImageFile[]>([]);
@@ -321,7 +335,6 @@ export default function EditProductModal({ product, open, onOpenChange }: EditPr
                       </Select>
                       <FormMessage />
                     </FormItem>
-
                   )}
                 />
 
@@ -336,7 +349,6 @@ export default function EditProductModal({ product, open, onOpenChange }: EditPr
                           <FormControl>
                             <Input {...field} />
                           </FormControl>
-
                         </Select>
                         <FormMessage />
                       </FormItem>
@@ -392,7 +404,7 @@ export default function EditProductModal({ product, open, onOpenChange }: EditPr
                             type="number"
                             step="0.01"
                             {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            onChange={(e) => field.onChange(parseFloat(e.target.value))}
                           />
                         </FormControl>
                         <FormMessage />
@@ -411,7 +423,7 @@ export default function EditProductModal({ product, open, onOpenChange }: EditPr
                             type="number"
                             step="0.01"
                             {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            onChange={(e) => field.onChange(parseFloat(e.target.value))}
                           />
                         </FormControl>
                         <FormMessage />
@@ -430,7 +442,7 @@ export default function EditProductModal({ product, open, onOpenChange }: EditPr
                         <Input
                           type="number"
                           {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                          onChange={(e) => field.onChange(parseInt(e.target.value))}
                         />
                       </FormControl>
                       <FormMessage />
@@ -520,25 +532,43 @@ export default function EditProductModal({ product, open, onOpenChange }: EditPr
               </div>
             )}
 
+            {/* MANDATORY WARNING BANNER */}
+            <Alert className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
+              <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-500" />
+              <AlertTitle className="text-amber-900 dark:text-amber-100 font-bold text-base">
+                ⚠️ MANDATORY: Image Re-upload Required
+              </AlertTitle>
+              <AlertDescription className="text-amber-800 dark:text-amber-200 space-y-2 mt-2">
+                <p className="font-semibold text-sm">
+                  Even if current images are displayed above, you MUST re-upload product images to save any changes.
+                </p>
+                <div className="text-xs space-y-1 pl-4 border-l-2 border-amber-400 mt-2">
+                  <p>✓ <strong>Re-uploading images is mandatory</strong> - Changes cannot be saved without new images</p>
+                  <p>✓ Upload at least 1 image (maximum 5 images allowed)</p>
+                  <p>✓ Previous images will be replaced with newly uploaded ones</p>
+                  <p>✓ Accepted formats: JPG, PNG, WEBP (max 5MB per image)</p>
+                  <p>✓ This applies even if you're only editing text fields like price or description</p>
+                </div>
+              </AlertDescription>
+            </Alert>
+
             {/* New Images Upload */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium">Add New Images</h3>
-                {/* <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="replaceAll"
-                    checked={replaceAllImages}
-                    onCheckedChange={(checked) => setReplaceAllImages(checked === true)}
-                  />
-                  <Label htmlFor="replaceAll" className="text-sm">
-                    Replace all current images
-                  </Label>
-                </div> */}
+                <h3 className="text-lg font-medium flex items-center gap-2">
+                  <Upload className="w-4 h-4" />
+                  Upload New Images <span className="text-destructive text-xl">*</span>
+                </h3>
               </div>
 
               <div
-                className={`border-2 border-dashed rounded-lg p-6 text-center transition-smooth cursor-pointer ${dragActive ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
-                  }`}
+                className={`border-2 border-dashed rounded-lg p-6 text-center transition-smooth cursor-pointer ${
+                  dragActive 
+                    ? 'border-primary bg-primary/5' 
+                    : newImages.length === 0 
+                      ? 'border-amber-500 bg-amber-50/50 dark:bg-amber-950/10' 
+                      : 'border-border hover:border-primary/50'
+                }`}
                 onDragEnter={handleDrag}
                 onDragLeave={handleDrag}
                 onDragOver={handleDrag}
@@ -554,11 +584,16 @@ export default function EditProductModal({ product, open, onOpenChange }: EditPr
                   className="hidden"
                   disabled={newImages.length >= 5}
                 />
-                <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">
+                <Upload className={`w-8 h-8 mx-auto mb-2 ${newImages.length === 0 ? 'text-amber-600' : 'text-muted-foreground'}`} />
+                <p className={`text-sm font-medium ${newImages.length === 0 ? 'text-amber-900 dark:text-amber-100' : 'text-foreground'}`}>
                   {newImages.length >= 5
-                    ? 'Maximum images reached'
-                    : 'Drag and drop or click to add new images (max 5)'}
+                    ? 'Maximum 5 images reached'
+                    : newImages.length === 0
+                      ? '⚠️ REQUIRED: Click or drag images here to upload'
+                      : `${newImages.length} image(s) uploaded - Add more (max 5)`}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  PNG, JPG, WEBP
                 </p>
               </div>
 
@@ -566,7 +601,7 @@ export default function EditProductModal({ product, open, onOpenChange }: EditPr
                 <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
                   {newImages.map((image, index) => (
                     <div key={index} className="relative group">
-                      <div className="aspect-square rounded-lg overflow-hidden bg-muted">
+                      <div className="aspect-square rounded-lg overflow-hidden bg-muted border-2 border-green-500">
                         <img
                           src={image.preview}
                           alt={`New ${index + 1}`}
@@ -598,7 +633,7 @@ export default function EditProductModal({ product, open, onOpenChange }: EditPr
               </Button>
               <Button
                 type="submit"
-                disabled={updateMutation.isPending}
+                disabled={updateMutation.isPending || newImages.length === 0}
                 className="bg-gradient-primary hover:opacity-90"
               >
                 {updateMutation.isPending ? (

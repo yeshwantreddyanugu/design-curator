@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { productApi, Product, formatPrice, getStockStatus } from '@/services/productApi';
+import { productApi, Product, getStockStatus } from '@/services/productApi';
 import EditProductModal from '@/components/EditProductModal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import {
   Table,
@@ -59,13 +60,218 @@ import {
   Package,
   Shirt,
   ShoppingBag,
-  X,
-  ExternalLink,
-  Tag,
+  IndianRupee,
+  Palette,
   Calendar,
-  Palette
+  Tag,
+  FileText,
+  Ruler,
+  Box
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+
+// Helper function to format price with rupee symbol
+const formatPriceWithRupee = (price: number, discountPercent?: number | null) => {
+  const formatNumber = (num: number) => `₹${num.toFixed(2)}`;
+  
+  if (discountPercent && discountPercent > 0 && discountPercent < 100) {
+    const discountAmount = (price * discountPercent) / 100;
+    const finalPrice = price - discountAmount;
+    return {
+      hasDiscount: true,
+      finalPrice: formatNumber(finalPrice),
+      original: formatNumber(price),
+      discountPercent: `${discountPercent}%`,
+      savings: formatNumber(discountAmount)
+    };
+  }
+  
+  return {
+    hasDiscount: false,
+    finalPrice: formatNumber(price),
+    original: formatNumber(price),
+    discountPercent: null,
+    savings: null
+  };
+};
+
+// View Product Modal Component
+function ViewProductModal({ product, open, onOpenChange }: { product: Product | null; open: boolean; onOpenChange: (open: boolean) => void }) {
+  if (!product) return null;
+
+  const pricing = formatPriceWithRupee(product.price, product.discountPrice);
+  const stockStatus = getStockStatus(product.stockQuantity);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+            <Eye className="w-6 h-6" />
+            View Product - {product.productName}
+          </DialogTitle>
+        </DialogHeader>
+        
+        <div className="space-y-6">
+          {/* Product Images */}
+          {product.imageUrls && product.imageUrls.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="font-medium flex items-center space-x-2">
+                <Palette className="w-4 h-4" />
+                <span>Product Images</span>
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {product.imageUrls.map((url, index) => (
+                  <div key={index} className="aspect-square rounded-lg overflow-hidden bg-muted border">
+                    <img
+                      src={url}
+                      alt={`${product.productName} ${index + 1}`}
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Basic Information */}
+            <div className="space-y-4">
+              <h3 className="font-medium flex items-center space-x-2">
+                <FileText className="w-4 h-4" />
+                <span>Basic Information</span>
+              </h3>
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Product Name</Label>
+                  <p className="text-foreground">{product.productName}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Type</Label>
+                  <Badge variant="outline" className="flex items-center gap-1 w-fit mt-1">
+                    {product.productType === 'CLOTHES' ? (
+                      <Shirt className="w-3 h-3" />
+                    ) : (
+                      <ShoppingBag className="w-3 h-3" />
+                    )}
+                    {product.productType}
+                  </Badge>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Category</Label>
+                  <p className="text-foreground">{product.category}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Subcategory</Label>
+                  <p className="text-foreground">{product.subcategory}</p>
+                </div>
+                {product.description && (
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Description</Label>
+                    <p className="text-foreground text-sm">{product.description}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Pricing & Stock */}
+            <div className="space-y-4">
+              <h3 className="font-medium flex items-center space-x-2">
+                <IndianRupee className="w-4 h-4" />
+                <span>Pricing & Stock</span>
+              </h3>
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Price</Label>
+                  <div className="space-y-1">
+                    {pricing.hasDiscount ? (
+                      <>
+                        <p className="font-semibold text-success text-xl">{pricing.finalPrice}</p>
+                        <p className="text-sm text-muted-foreground line-through">{pricing.original}</p>
+                        <Badge variant="secondary" className="text-xs">
+                          {pricing.discountPercent} OFF
+                        </Badge>
+                      </>
+                    ) : (
+                      <p className="font-semibold text-foreground text-xl">{pricing.finalPrice}</p>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Stock Status</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Badge className={stockStatus.className}>
+                      {stockStatus.label}
+                    </Badge>
+                    <span className="text-sm text-muted-foreground">
+                      {product.stockQuantity} units
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Colors & Sizes */}
+          <div className="space-y-4">
+            <h3 className="font-medium flex items-center space-x-2">
+              <Palette className="w-4 h-4" />
+              <span>Options</span>
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {product.availableColors && product.availableColors.length > 0 && (
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Available Colors</Label>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {product.availableColors.map((color, index) => (
+                      <Badge key={index} variant="outline" className="capitalize">
+                        {color}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {product.availableSizes && product.availableSizes.length > 0 && (
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Available Sizes</Label>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {product.availableSizes.map((size, index) => (
+                      <Badge key={index} variant="outline" className="uppercase">
+                        {size}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Dates */}
+          <div className="space-y-4">
+            <h3 className="font-medium flex items-center space-x-2">
+              <Calendar className="w-4 h-4" />
+              <span>Timeline</span>
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {product.createdAt && (
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Created</Label>
+                  <p className="text-foreground">{new Date(product.createdAt).toLocaleDateString()}</p>
+                </div>
+              )}
+              {product.updatedAt && (
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Last Updated</Label>
+                  <p className="text-foreground">{new Date(product.updatedAt).toLocaleDateString()}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export default function ProductList() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -75,11 +281,11 @@ export default function ProductList() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
   const [productToEdit, setProductToEdit] = useState<Product | null>(null);
+  const [productToView, setProductToView] = useState<Product | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<number[]>([]);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
-  const [viewModalOpen, setViewModalOpen] = useState(false);
-  const [productToView, setProductToView] = useState<Product | null>(null);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -89,17 +295,9 @@ export default function ProductList() {
     queryFn: () => productApi.getProducts(0, 50),
   });
 
-  // Query for single product when viewing details
-  const { data: productDetails, isLoading: isLoadingDetails } = useQuery<Product>({
-    queryKey: ['product', productToView?.id],
-    queryFn: () => productApi.getProduct(productToView!.id),
-    enabled: !!productToView?.id && viewModalOpen,
-  });
-
   const deleteMutation = useMutation({
     mutationFn: productApi.deleteProduct,
     onSuccess: () => {
-      console.log('✅ Product deletion successful');
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['product-stats'] });
       toast({
@@ -110,7 +308,6 @@ export default function ProductList() {
       setProductToDelete(null);
     },
     onError: (error) => {
-      console.error('❌ Product deletion failed:', error);
       toast({
         title: "Error",
         description: "Failed to delete product. Please try again.",
@@ -124,8 +321,6 @@ export default function ProductList() {
     onSuccess: (results) => {
       const successful = results.filter(r => r.status === 'fulfilled').length;
       const failed = results.filter(r => r.status === 'rejected').length;
-      
-      console.log(`✅ Bulk delete completed: ${successful} successful, ${failed} failed`);
       
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['product-stats'] });
@@ -147,7 +342,6 @@ export default function ProductList() {
       setBulkDeleteDialogOpen(false);
     },
     onError: (error) => {
-      console.error('❌ Bulk delete failed:', error);
       toast({
         title: "Error",
         description: "Failed to delete products. Please try again.",
@@ -157,83 +351,57 @@ export default function ProductList() {
   });
 
   const handleViewDetails = (product: Product) => {
-    console.log('👁️ View Details clicked for product:', {
-      id: product.id,
-      name: product.productName,
-      type: product.productType,
-      category: product.category
-    });
-    
     setProductToView(product);
     setViewModalOpen(true);
-    
-    toast({
-      title: "Loading product details",
-      description: `Fetching details for ${product.productName}`,
-    });
   };
 
   const handleDeleteClick = (product: Product) => {
-    console.log('🗑️ Delete button clicked for product:', product.id, product.productName);
     setProductToDelete(product);
     setDeleteDialogOpen(true);
   };
 
   const handleDeleteConfirm = () => {
     if (productToDelete) {
-      console.log('⚠️ Confirming deletion for product:', productToDelete.id);
       deleteMutation.mutate(productToDelete.id);
     }
   };
 
   const handleEditClick = (product: Product) => {
-    console.log('✏️ Edit button clicked for product:', product.id, product.productName);
     setProductToEdit(product);
     setEditModalOpen(true);
   };
 
   const handleBulkDeleteClick = () => {
     if (selectedProducts.length > 0) {
-      console.log('🗑️ Bulk delete initiated for products:', selectedProducts);
       setBulkDeleteDialogOpen(true);
     }
   };
 
   const handleBulkDeleteConfirm = () => {
     if (selectedProducts.length > 0) {
-      console.log('⚠️ Confirming bulk deletion for products:', selectedProducts);
       bulkDeleteMutation.mutate(selectedProducts);
     }
   };
 
   const toggleProductSelection = (productId: number) => {
-    console.log('☑️ Toggling selection for product:', productId);
-    setSelectedProducts(prev => {
-      const newSelection = prev.includes(productId)
+    setSelectedProducts(prev =>
+      prev.includes(productId)
         ? prev.filter(id => id !== productId)
-        : [...prev, productId];
-      console.log('📝 Updated selection:', newSelection);
-      return newSelection;
-    });
+        : [...prev, productId]
+    );
   };
 
   const toggleAllSelection = () => {
-    console.log('☑️ Toggle all selection clicked');
-    setSelectedProducts(prev => {
-      const newSelection = prev.length === filteredProducts.length 
-        ? [] 
-        : filteredProducts.map(p => p.id);
-      console.log('📝 All selection updated:', newSelection);
-      return newSelection;
-    });
+    setSelectedProducts(prev =>
+      prev.length === filteredProducts.length
+        ? []
+        : filteredProducts.map(p => p.id)
+    );
   };
 
-  const clearSelection = () => {
-    console.log('🧹 Clearing all selections');
-    setSelectedProducts([]);
-  };
+  const clearSelection = () => setSelectedProducts([]);
 
-  // Filter products based on search and filters
+  // Filter products
   const filteredProducts = products?.filter((product) => {
     const matchesSearch = product.productName
       .toLowerCase()
@@ -252,13 +420,9 @@ export default function ProductList() {
     return matchesSearch && matchesType && matchesCategory && matchesStock;
   }) || [];
 
-  // Log filtered results when filters change
-  console.log('🔍 Filtered products count:', filteredProducts.length, 'out of', products?.length || 0);
-
   const categories = [...new Set(products?.map(p => p.category) || [])];
 
   if (isLoading) {
-    console.log('⏳ Loading products...');
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">
@@ -290,7 +454,6 @@ export default function ProductList() {
   }
 
   if (error) {
-    console.error('❌ Error loading products:', error);
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
@@ -300,8 +463,6 @@ export default function ProductList() {
       </div>
     );
   }
-
-  console.log('📊 ProductList rendered with', products?.length || 0, 'total products');
 
   return (
     <div className="space-y-6">
@@ -331,19 +492,13 @@ export default function ProductList() {
                 <Input
                   placeholder="Search products..."
                   value={searchTerm}
-                  onChange={(e) => {
-                    console.log('🔍 Search term changed:', e.target.value);
-                    setSearchTerm(e.target.value);
-                  }}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
                 />
               </div>
             </div>
             <div className="flex gap-2">
-              <Select value={typeFilter} onValueChange={(value) => {
-                console.log('🏷️ Type filter changed:', value);
-                setTypeFilter(value);
-              }}>
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
                 <SelectTrigger className="w-[120px]">
                   <SelectValue placeholder="Type" />
                 </SelectTrigger>
@@ -354,10 +509,7 @@ export default function ProductList() {
                 </SelectContent>
               </Select>
               
-              <Select value={categoryFilter} onValueChange={(value) => {
-                console.log('📂 Category filter changed:', value);
-                setCategoryFilter(value);
-              }}>
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                 <SelectTrigger className="w-[150px]">
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
@@ -371,10 +523,7 @@ export default function ProductList() {
                 </SelectContent>
               </Select>
 
-              <Select value={stockFilter} onValueChange={(value) => {
-                console.log('📦 Stock filter changed:', value);
-                setStockFilter(value);
-              }}>
+              <Select value={stockFilter} onValueChange={setStockFilter}>
                 <SelectTrigger className="w-[130px]">
                   <SelectValue placeholder="Stock" />
                 </SelectTrigger>
@@ -460,7 +609,7 @@ export default function ProductList() {
               </TableHeader>
               <TableBody>
                 {filteredProducts.map((product) => {
-                  const pricing = formatPrice(product.price, product.discountPrice);
+                  const pricing = formatPriceWithRupee(product.price, product.discountPrice);
                   const stockStatus = getStockStatus(product.stockQuantity);
                   return (
                     <TableRow key={product.id} className="hover:bg-muted/50 transition-smooth">
@@ -472,13 +621,11 @@ export default function ProductList() {
                       </TableCell>
                       <TableCell>
                         <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted">
-                          {product.imageUrls.length > 0 ? (
+                          {product.imageUrls && product.imageUrls.length > 0 ? (
                             <img
                               src={product.imageUrls[0]}
                               alt={product.productName}
                               className="w-full h-full object-cover"
-                              onLoad={() => console.log('🖼️ Image loaded for:', product.productName)}
-                              onError={() => console.error('❌ Image failed to load for:', product.productName)}
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
@@ -510,13 +657,16 @@ export default function ProductList() {
                         <div className="space-y-1">
                           {pricing.hasDiscount ? (
                             <>
-                              <p className="font-semibold text-success">{pricing.discount}</p>
+                              <p className="font-semibold text-success">{pricing.finalPrice}</p>
                               <p className="text-sm text-muted-foreground line-through">
                                 {pricing.original}
                               </p>
+                              <Badge variant="outline" className="text-xs">
+                                {pricing.discountPercent} OFF
+                              </Badge>
                             </>
                           ) : (
-                            <p className="font-semibold text-foreground">{pricing.original}</p>
+                            <p className="font-semibold text-foreground">{pricing.finalPrice}</p>
                           )}
                         </div>
                       </TableCell>
@@ -528,11 +678,7 @@ export default function ProductList() {
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button 
-                              variant="ghost" 
-                              size="icon"
-                              onClick={() => console.log('⚙️ Actions menu opened for product:', product.id)}
-                            >
+                            <Button variant="ghost" size="icon">
                               <MoreHorizontal className="w-4 h-4" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -585,6 +731,27 @@ export default function ProductList() {
         </CardContent>
       </Card>
 
+      {/* View Product Modal */}
+      <ViewProductModal
+        product={productToView}
+        open={viewModalOpen}
+        onOpenChange={setViewModalOpen}
+      />
+
+      {/* Edit Product Modal */}
+      {productToEdit && (
+        <EditProductModal
+          product={productToEdit}
+          open={editModalOpen}
+          onOpenChange={(open) => {
+            setEditModalOpen(open);
+            if (!open) {
+              setProductToEdit(null);
+            }
+          }}
+        />
+      )}
+
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
@@ -595,12 +762,10 @@ export default function ProductList() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => console.log('❌ Delete cancelled')}>
-              Cancel
-            </AlertDialogCancel>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
-              className="bg-destructive hover:bg-destructive/90"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={deleteMutation.isPending}
             >
               {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
@@ -619,278 +784,17 @@ export default function ProductList() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => console.log('❌ Bulk delete cancelled')}>
-              Cancel
-            </AlertDialogCancel>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleBulkDeleteConfirm}
-              className="bg-destructive hover:bg-destructive/90"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={bulkDeleteMutation.isPending}
             >
-              {bulkDeleteMutation.isPending ? 'Deleting...' : 'Delete All'}
+              {bulkDeleteMutation.isPending ? 'Deleting...' : `Delete ${selectedProducts.length} Product(s)`}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Edit Product Modal */}
-      {productToEdit && (
-        <EditProductModal
-          product={productToEdit}
-          open={editModalOpen}
-          onOpenChange={(open) => {
-            console.log('📝 Edit modal state changed:', open);
-            setEditModalOpen(open);
-            if (!open) {
-              setProductToEdit(null);
-            }
-          }}
-        />
-      )}
-
-      {/* View Product Details Modal */}
-      <Dialog open={viewModalOpen} onOpenChange={(open) => {
-        console.log('👁️ View modal state changed:', open);
-        setViewModalOpen(open);
-        if (!open) {
-          setProductToView(null);
-        }
-      }}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-xl">
-              <Eye className="w-5 h-5" />
-              Product Details
-            </DialogTitle>
-          </DialogHeader>
-          
-          {isLoadingDetails ? (
-            <div className="space-y-6 p-6">
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                <span className="ml-2 text-muted-foreground">Loading product details...</span>
-              </div>
-            </div>
-          ) : productDetails ? (
-            <div className="space-y-6 p-6">
-              {/* Product Images */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <Package className="w-5 h-5" />
-                    Product Images
-                  </h3>
-                  <div className="grid grid-cols-2 gap-2">
-                    {productDetails.imageUrls.length > 0 ? (
-                      productDetails.imageUrls.map((url, index) => (
-                        <div key={index} className="aspect-square rounded-lg overflow-hidden bg-muted border">
-                          <img
-                            src={url}
-                            alt={`${productDetails.productName} - Image ${index + 1}`}
-                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                            onLoad={() => console.log(`🖼️ Image ${index + 1} loaded for product details`)}
-                            onError={() => console.error(`❌ Image ${index + 1} failed to load for product details`)}
-                          />
-                        </div>
-                      ))
-                    ) : (
-                      <div className="col-span-2 aspect-square rounded-lg bg-muted border flex items-center justify-center">
-                        <Package className="w-12 h-12 text-muted-foreground" />
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Product Information */}
-                <div className="space-y-4">
-                  <div>
-                    <h2 className="text-2xl font-bold text-foreground mb-2">
-                      {productDetails.productName}
-                    </h2>
-                    <p className="text-muted-foreground">{productDetails.subcategory}</p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <Tag className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">Type</span>
-                      </div>
-                      <Badge variant="outline" className="flex items-center gap-1 w-fit">
-                        {productDetails.productType === 'CLOTHES' ? (
-                          <Shirt className="w-3 h-3" />
-                        ) : (
-                          <ShoppingBag className="w-3 h-3" />
-                        )}
-                        {productDetails.productType}
-                      </Badge>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <Package className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">Category</span>
-                      </div>
-                      <Badge variant="secondary">{productDetails.category}</Badge>
-                    </div>
-                  </div>
-
-                  {/* Pricing */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">Pricing</span>
-                    </div>
-                    <div>
-                      {(() => {
-                        const pricing = formatPrice(productDetails.price, productDetails.discountPrice);
-                        return pricing.hasDiscount ? (
-                          <div className="space-y-1">
-                            <p className="text-2xl font-bold text-green-600">{pricing.discount}</p>
-                            <p className="text-lg text-muted-foreground line-through">{pricing.original}</p>
-                            <Badge variant="destructive" className="text-xs">
-                              {Math.round(((productDetails.price - (productDetails.discountPrice || 0)) / productDetails.price) * 100)}% OFF
-                            </Badge>
-                          </div>
-                        ) : (
-                          <p className="text-2xl font-bold text-foreground">{pricing.original}</p>
-                        );
-                      })()}
-                    </div>
-                  </div>
-
-                  {/* Stock Status */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">Stock Status</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      {(() => {
-                        const stockStatus = getStockStatus(productDetails.stockQuantity);
-                        return (
-                          <>
-                            <Badge className={stockStatus.className}>
-                              {stockStatus.label}
-                            </Badge>
-                            <span className="text-sm text-muted-foreground">
-                              {productDetails.stockQuantity} units available
-                            </span>
-                          </>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Additional Details */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Colors */}
-                {productDetails.colors && productDetails.colors.length > 0 && (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Palette className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm font-medium">Available Colors</span>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {productDetails.colors.map((color, index) => (
-                        <Badge key={index} variant="outline" className="capitalize">
-                          {color}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Sizes */}
-                {productDetails.sizes && productDetails.sizes.length > 0 && (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Tag className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm font-medium">Available Sizes</span>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {productDetails.sizes.map((size, index) => (
-                        <Badge key={index} variant="outline" className="uppercase">
-                          {size}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Description */}
-              {productDetails.description && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">Description</span>
-                  </div>
-                  <div className="bg-muted/30 rounded-lg p-4">
-                    <p className="text-sm text-foreground leading-relaxed">
-                      {productDetails.description}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Product Metadata */}
-              <div className="border-t pt-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Tag className="w-4 h-4" />
-                    <span>Product ID: <span className="font-mono">{productDetails.id}</span></span>
-                  </div>
-                  {productDetails.createdAt && (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Calendar className="w-4 h-4" />
-                      <span>Created: {new Date(productDetails.createdAt).toLocaleDateString()}</span>
-                    </div>
-                  )}
-                  {productDetails.updatedAt && (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Calendar className="w-4 h-4" />
-                      <span>Updated: {new Date(productDetails.updatedAt).toLocaleDateString()}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex justify-end gap-3 pt-6 border-t">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    console.log('✏️ Edit from view modal clicked for product:', productDetails.id);
-                    setViewModalOpen(false);
-                    setProductToView(null);
-                    setProductToEdit(productDetails);
-                    setEditModalOpen(true);
-                  }}
-                >
-                  <Edit className="w-4 h-4 mr-2" />
-                  Edit Product
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => {
-                    console.log('🗑️ Delete from view modal clicked for product:', productDetails.id);
-                    setViewModalOpen(false);
-                    setProductToView(null);
-                    handleDeleteClick(productDetails);
-                  }}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete Product
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">Failed to load product details</p>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
