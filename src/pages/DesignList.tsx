@@ -62,13 +62,16 @@ import {
   Plus,
   Loader2,
   Save,
-  DollarSign,
+  IndianRupee,
   Palette,
   Tags,
   Calendar,
   User,
   Upload,
-  X,AlertTriangle, Info
+  X,
+  AlertTriangle,
+  Info,
+  Percent
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -110,13 +113,39 @@ const AVAILABLE_COLORS = [
   'Yellow', 'Purple', 'Pink', 'Orange', 'Gray'
 ];
 
+// Helper function to format price with rupee symbol
+// discountPrice is stored as PERCENTAGE in the backend
+const formatPriceWithRupee = (price: number, discountPercent?: number | null) => {
+  const formatNumber = (num: number) => `₹${num.toFixed(2)}`;
+  
+  if (discountPercent && discountPercent > 0 && discountPercent < 100) {
+    const discountAmount = (price * discountPercent) / 100;
+    const finalPrice = price - discountAmount;
+    return {
+      hasDiscount: true,
+      finalPrice: formatNumber(finalPrice),
+      original: formatNumber(price),
+      discountPercent: `${discountPercent}%`,
+      savings: formatNumber(discountAmount)
+    };
+  }
+  
+  return {
+    hasDiscount: false,
+    finalPrice: formatNumber(price),
+    original: formatNumber(price),
+    discountPercent: null,
+    savings: null
+  };
+};
+
 // View Design Modal Component
 function ViewDesignModal({ design, open, onOpenChange }: { design: Design | null; open: boolean; onOpenChange: (open: boolean) => void }) {
   if (!design) return null;
 
   console.log('ViewDesignModal - Design data:', design);
 
-  const pricing = formatPrice(design.price, design.discountPrice);
+  const pricing = formatPriceWithRupee(design.price, design.discountPrice);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -186,7 +215,7 @@ function ViewDesignModal({ design, open, onOpenChange }: { design: Design | null
             {/* Pricing & Status */}
             <div className="space-y-4">
               <h3 className="font-medium flex items-center space-x-2">
-                <DollarSign className="w-4 h-4" />
+                <IndianRupee className="w-4 h-4" />
                 <span>Pricing & Status</span>
               </h3>
               <div className="space-y-3">
@@ -195,11 +224,14 @@ function ViewDesignModal({ design, open, onOpenChange }: { design: Design | null
                   <div className="space-y-1">
                     {pricing.hasDiscount ? (
                       <>
-                        <p className="font-semibold text-success">{pricing.discount}</p>
+                        <p className="font-semibold text-success text-xl">{pricing.finalPrice}</p>
                         <p className="text-sm text-muted-foreground line-through">{pricing.original}</p>
+                        <Badge variant="secondary" className="text-xs">
+                          {pricing.discountPercent} OFF
+                        </Badge>
                       </>
                     ) : (
-                      <p className="font-semibold text-foreground">{pricing.original}</p>
+                      <p className="font-semibold text-foreground text-xl">{pricing.finalPrice}</p>
                     )}
                   </div>
                 </div>
@@ -297,7 +329,7 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
     category: '',
     subcategory: '',
     price: 0,
-    discountPrice: 0,
+    discountPrice: 0, // This will be stored as PERCENTAGE
     availableColors: [] as string[],
     tags: [] as string[],
     description: '',
@@ -317,6 +349,24 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Calculate final price and discount amount based on percentage
+  const calculatePricing = () => {
+    if (formData.price > 0 && formData.discountPrice > 0 && formData.discountPrice < 100) {
+      const discountAmount = (formData.price * formData.discountPrice) / 100;
+      const finalPrice = formData.price - discountAmount;
+      return {
+        finalPrice,
+        discountAmount,
+        discountPercent: formData.discountPrice
+      };
+    }
+    return {
+      finalPrice: formData.price,
+      discountAmount: 0,
+      discountPercent: 0
+    };
+  };
+
   // Initialize form data when design changes
   React.useEffect(() => {
     if (design) {
@@ -330,7 +380,7 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
         category: design.category || '',
         subcategory: design.subcategory || '',
         price: design.price || 0,
-        discountPrice: design.discountPrice || 0,
+        discountPrice: design.discountPrice || 0, // This is already a percentage from backend
         availableColors: design.availableColors || [],
         tags: design.tags || [],
         description: design.description || '',
@@ -346,12 +396,7 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
       setExistingImages(design.imageUrls || []);
       setNewImages([]);
 
-      console.log('EditDesignModal - Form initialized with:', {
-        categories,
-        subcategory: design.subcategory,
-        tags: design.tags,
-        existingImages: design.imageUrls?.length || 0
-      });
+      console.log('EditDesignModal - Form initialized with discount percentage:', design.discountPrice);
     }
   }, [design]);
 
@@ -472,6 +517,7 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
     if (!design) return;
 
     console.log('EditDesignModal - Form submission started');
+    console.log('EditDesignModal - Current formData.discountPrice:', formData.discountPrice);
 
     // Check only mandatory fields
     if (!formData.designName || !formData.category || !formData.subcategory || !formData.price) {
@@ -485,6 +531,16 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields: Design Name, Category, Subcategory, and Price.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate discount percentage
+    if (formData.discountPrice < 0 || formData.discountPrice >= 100) {
+      toast({
+        title: "Invalid Discount",
+        description: "Discount percentage must be between 0 and 99.",
         variant: "destructive",
       });
       return;
@@ -507,13 +563,23 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
       }
     }
 
-    // Clean JSON data matching backend expectations exactly
+    // FIXED: Properly handle discount price conversion to null when 0
+    // Convert to number first, then check if it's valid
+    const discountValue = Number(formData.discountPrice);
+    const cleanDiscountPrice = (discountValue > 0 && discountValue < 100) ? discountValue : 0;
+
+    console.log('EditDesignModal - Discount value processing:', {
+      rawValue: formData.discountPrice,
+      numberValue: discountValue,
+      cleanValue: cleanDiscountPrice
+    });
+
     const designData = {
       designName: formData.designName,
       category: formData.category,
       subcategory: formData.subcategory,
       price: Number(formData.price),
-      discountPrice: formData.discountPrice ? Number(formData.discountPrice) : null,
+      discountPrice: cleanDiscountPrice, // Send 0 when no discount, backend should handle this
       availableColors: availableColors,
       tags: tags,
       description: formData.description || '',
@@ -569,6 +635,8 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
   };
 
   if (!design) return null;
+
+  const pricing = calculatePricing();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -671,13 +739,13 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
-                  <DollarSign className="w-5 h-5" />
+                  <IndianRupee className="w-5 h-5" />
                   <span>Pricing & Options</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit-price">Price *</Label>
+                  <Label htmlFor="edit-price">Price (₹) *</Label>
                   <Input
                     id="edit-price"
                     type="number"
@@ -685,23 +753,89 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
                     min="0.01"
                     value={formData.price || ''}
                     onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
-                    placeholder="100"
+                    placeholder="2500"
                     required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="edit-discountPrice">Discount Price</Label>
+                  <Label htmlFor="edit-discountPrice" className="flex items-center gap-2">
+                    Discount Percentage (%)
+                    <Percent className="w-4 h-4 text-muted-foreground" />
+                  </Label>
                   <Input
                     id="edit-discountPrice"
                     type="number"
                     step="0.01"
                     min="0"
-                    value={formData.discountPrice || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, discountPrice: parseFloat(e.target.value) || 0 }))}
-                    placeholder="10"
+                    max="99"
+                    value={formData.discountPrice === 0 ? '' : formData.discountPrice}
+                    onChange={(e) => {
+                      const inputValue = e.target.value;
+                      console.log('Discount input changed:', inputValue);
+                      
+                      // Handle empty string (when user clears the field)
+                      if (inputValue === '' || inputValue === null || inputValue === undefined) {
+                        console.log('Setting discount to 0 (empty field)');
+                        setFormData(prev => ({ ...prev, discountPrice: 0 }));
+                        return;
+                      }
+                      
+                      // Parse the value
+                      const numValue = parseFloat(inputValue);
+                      
+                      // Handle invalid numbers (NaN)
+                      if (isNaN(numValue)) {
+                        console.log('Invalid number, setting to 0');
+                        setFormData(prev => ({ ...prev, discountPrice: 0 }));
+                        return;
+                      }
+                      
+                      // Clamp between 0 and 99
+                      const clampedValue = Math.min(Math.max(numValue, 0), 99);
+                      console.log('Setting discount to:', clampedValue);
+                      setFormData(prev => ({ ...prev, discountPrice: clampedValue }));
+                    }}
+                    placeholder="0"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Enter discount as percentage (0-99%). Leave empty or enter 0 for no discount.
+                  </p>
                 </div>
+
+                {/* Display Final Price Calculation */}
+                {formData.price > 0 && (
+                  <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg space-y-2">
+                    <Label className="text-sm font-medium">Final Price Preview</Label>
+                    <div className="space-y-2">
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-sm text-muted-foreground">Original Price:</span>
+                        <span className="font-medium">₹{formData.price.toFixed(2)}</span>
+                      </div>
+                      {pricing.discountPercent > 0 && (
+                        <>
+                          <div className="flex items-baseline justify-between">
+                            <span className="text-sm text-muted-foreground">Discount ({pricing.discountPercent}%):</span>
+                            <span className="font-medium text-destructive">-₹{pricing.discountAmount.toFixed(2)}</span>
+                          </div>
+                          <div className="border-t pt-2 flex items-baseline justify-between">
+                            <span className="text-sm font-semibold">Final Price:</span>
+                            <span className="text-2xl font-bold text-success">₹{pricing.finalPrice.toFixed(2)}</span>
+                          </div>
+                          <Badge variant="secondary" className="w-full justify-center">
+                            Save ₹{pricing.discountAmount.toFixed(2)} ({pricing.discountPercent}% OFF)
+                          </Badge>
+                        </>
+                      )}
+                      {pricing.discountPercent === 0 && (
+                        <div className="border-t pt-2 flex items-baseline justify-between">
+                          <span className="text-sm font-semibold">Final Price:</span>
+                          <span className="text-2xl font-bold text-foreground">₹{pricing.finalPrice.toFixed(2)}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="edit-licenseType">License Type</Label>
@@ -847,7 +981,7 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
                 </div>
               )}
 
-              {/* Current Images Info (Hidden but informative) */}
+              {/* Current Images Info */}
               {existingImages.length > 0 && (
                 <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
                   <div className="flex items-start space-x-2">
@@ -1268,7 +1402,7 @@ export default function DesignList() {
               </TableHeader>
               <TableBody>
                 {filteredDesigns.map((design) => {
-                  const pricing = formatPrice(design.price, design.discountPrice);
+                  const pricing = formatPriceWithRupee(design.price, design.discountPrice);
                   return (
                     <TableRow key={design.id} className="hover:bg-muted/50 transition-smooth">
                       <TableCell>
@@ -1305,13 +1439,16 @@ export default function DesignList() {
                         <div className="space-y-1">
                           {pricing.hasDiscount ? (
                             <>
-                              <p className="font-semibold text-success">{pricing.discount}</p>
+                              <p className="font-semibold text-success">{pricing.finalPrice}</p>
                               <p className="text-sm text-muted-foreground line-through">
                                 {pricing.original}
                               </p>
+                              <Badge variant="outline" className="text-xs">
+                                {pricing.discountPercent} OFF
+                              </Badge>
                             </>
                           ) : (
-                            <p className="font-semibold text-foreground">{pricing.original}</p>
+                            <p className="font-semibold text-foreground">{pricing.finalPrice}</p>
                           )}
                         </div>
                       </TableCell>
