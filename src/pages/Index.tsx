@@ -6,7 +6,7 @@ import { Palette, Lock, Mail, ShieldCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 // Base URL Configuration
-const BASE_URL = 'https://47b64a7ab055.ngrok-free.app';
+const BASE_URL = 'azacreation@gmail.com';
 
 const Index = () => {
   const navigate = useNavigate();
