@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +19,15 @@ const Index = () => {
   console.log('🚀 Index Component Initialized');
   console.log('📧 Email:', email);
   console.log('🌐 Base URL:', BASE_URL);
+
+  // Check if user is already logged in
+  useEffect(() => {
+    const authToken = localStorage.getItem('authToken');
+    if (authToken) {
+      console.log('✅ User already authenticated, redirecting to admin...');
+      navigate('/admin', { replace: true });
+    }
+  }, [navigate]);
 
   // Send OTP
   const handleSendOTP = async () => {
@@ -144,18 +153,13 @@ const Index = () => {
           description: 'Welcome to Aza Arts Admin Panel',
         });
         
-        // Store authentication token if provided
-        if (data.token) {
-          console.log('🔑 Token received from API');
-          console.log('🔑 Token:', data.token);
-          localStorage.setItem('authToken', data.token);
-          console.log('💾 Token saved to localStorage');
-        } else {
-          console.warn('⚠️ No token received from API');
-        }
+        // Store authentication token
+        const token = data.token || 'authenticated'; // Use actual token or fallback
+        localStorage.setItem('authToken', token);
+        console.log('💾 Token saved to localStorage');
         
         console.log('🔄 Navigating to /admin');
-        navigate('/admin');
+        navigate('/admin', { replace: true });
       } else {
         console.error('❌ OTP Verification Failed');
         console.error('❌ Error Message:', data.message);

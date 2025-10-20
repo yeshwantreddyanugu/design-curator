@@ -16,6 +16,7 @@ import NotFound from "./pages/NotFound";
 import SellerApplicationRequests from "./pages/SellerApplicationsRequests";
 import BannerImageUploadPage from "./pages/BannerImageUpload";
 import ContactUs from './pages/ContactUs';
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -27,7 +28,13 @@ const App = () => (
       <BrowserRouter basename="/">
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/admin" element={<AdminLayout />}>
+          
+          {/* Protected Admin Routes */}
+          <Route path="/admin" element={
+            <ProtectedRoute>
+              <AdminLayout />
+            </ProtectedRoute>
+          }>
             <Route index element={<AdminDashboard />} />
             <Route path="designs" element={<DesignList />} />
             <Route path="create" element={<CreateDesign />} />
@@ -40,6 +47,7 @@ const App = () => (
             <Route path="contactus" element={<ContactUs />} />
             <Route path="bannerImageUpload" element={<BannerImageUploadPage />} />
           </Route>
+          
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

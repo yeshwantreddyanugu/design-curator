@@ -24,6 +24,7 @@ import {
   FileImage, 
   Palette,
   DollarSign,
+  IndianRupee,
   Tags,
   User,
   Save,
@@ -553,7 +554,7 @@ export default function CreateDesign() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <DollarSign className="w-5 h-5" />
+                <IndianRupee className="w-5 h-5" />
                 <span>Pricing & Options</span>
               </CardTitle>
             </CardHeader>

@@ -23,6 +23,7 @@ import {
   FileImage, 
   Package,
   DollarSign,
+  IndianRupee,
   Palette,
   Save,
   ArrowLeft,
@@ -477,7 +478,7 @@ export default function CreateProduct() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <DollarSign className="w-5 h-5" />
+                <IndianRupee className="w-5 h-5" />
                 <span>Pricing & Stock</span>
               </CardTitle>
             </CardHeader>

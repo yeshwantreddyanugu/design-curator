@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Outlet, NavLink, useLocation } from 'react-router-dom';
+import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Palette,
@@ -15,10 +15,12 @@ import {
   MessageSquare,
   Image,
   Calendar,
-  Sparkles
+  Sparkles,
+  LogOut
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
@@ -35,8 +37,28 @@ const navigation = [
 ];
 
 export function AdminLayout() {
-  const [sidebarOpen, setSidebarOpen] = useState(true); // Start with sidebar open on desktop
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleLogout = () => {
+    console.log('🚪 Logout initiated');
+    
+    // Clear authentication token
+    localStorage.removeItem('authToken');
+    console.log('🗑️ Auth token removed from localStorage');
+    
+    // Show success message
+    toast({
+      title: 'Logged Out Successfully',
+      description: 'You have been securely logged out.',
+    });
+    
+    console.log('🔄 Redirecting to login page');
+    // Redirect to login page
+    navigate('/', { replace: true });
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
@@ -122,7 +144,7 @@ export function AdminLayout() {
         {/* Top header */}
         <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-lg border-b border-border shadow-sm">
           <div className="flex h-16 items-center justify-between px-6">
-            {/* Left: Menu Button - NOW VISIBLE ON DESKTOP TOO */}
+            {/* Left: Menu Button */}
             <Button
               variant="ghost"
               size="icon"
@@ -149,17 +171,30 @@ export function AdminLayout() {
               </div>
             </div>
 
-            {/* Right: Date */}
-            <div className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-100">
-              <Calendar className="w-4 h-4 text-blue-600" />
-              <p className="text-sm font-medium text-foreground hidden md:block">
-                {new Date().toLocaleDateString('en-US', {
-                  weekday: 'short',
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric'
-                })}
-              </p>
+            {/* Right: Date and Logout Button */}
+            <div className="flex items-center space-x-3">
+              {/* Date */}
+              <div className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-100">
+                <Calendar className="w-4 h-4 text-blue-600" />
+                <p className="text-sm font-medium text-foreground hidden md:block">
+                  {new Date().toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                  })}
+                </p>
+              </div>
+
+              {/* Logout Button */}
+              <Button
+                onClick={handleLogout}
+                variant="outline"
+                className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-red-50 to-orange-50 border-red-200 hover:bg-gradient-to-r hover:from-red-100 hover:to-orange-100 text-red-600 hover:text-red-700 rounded-xl transition-all duration-200"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="hidden sm:inline text-sm font-medium">Logout</span>
+              </Button>
             </div>
           </div>
         </div>

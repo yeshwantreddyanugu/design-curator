@@ -43,6 +43,7 @@ import {
   Package,
   Palette,
   DollarSign,
+  IndianRupee,
   Shirt,
   ShoppingBag, 
   BedDouble, 
@@ -388,7 +389,7 @@ export default function EditProductModal({ product, open, onOpenChange }: EditPr
               {/* Pricing & Stock */}
               <div className="space-y-4">
                 <h3 className="text-lg font-medium flex items-center space-x-2">
-                  <DollarSign className="w-4 h-4" />
+                  <IndianRupee className="w-5 h-5" />
                   <span>Pricing & Stock</span>
                 </h3>
 
