@@ -71,7 +71,8 @@ import {
   X,
   AlertTriangle,
   Info,
-  Percent
+  Percent,
+  Link2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -299,6 +300,29 @@ function ViewDesignModal({ design, open, onOpenChange }: { design: Design | null
             </div>
           </div>
 
+          {/* Web Links */}
+          {design.web_links && design.web_links.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="font-medium flex items-center space-x-2">
+                <Link2 className="w-4 h-4" />
+                <span>Web Links</span>
+              </h3>
+              <div className="flex flex-wrap gap-1">
+                {design.web_links.map((link, index) => (
+                  <a
+                    key={index}
+                    href={link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-primary hover:underline"
+                  >
+                    {link}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Dates */}
           <div className="space-y-4">
             <h3 className="font-medium flex items-center space-x-2">
@@ -332,6 +356,7 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
     discountPrice: 0, // This will be stored as PERCENTAGE
     availableColors: [] as string[],
     tags: [] as string[],
+    web_links: [] as string[], // Added web_links field
     description: '',
     licenseType: 'Commercial',
     isPremium: false,
@@ -342,6 +367,7 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [tagsInput, setTagsInput] = useState('');
+  const [webLinksInput, setWebLinksInput] = useState(''); // Added webLinksInput state
   const [existingImages, setExistingImages] = useState<string[]>([]);
   const [newImages, setNewImages] = useState<{ file: File; preview: string }[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -383,6 +409,7 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
         discountPrice: design.discountPrice || 0, // This is already a percentage from backend
         availableColors: design.availableColors || [],
         tags: design.tags || [],
+        web_links: design.web_links || [], // Initialize web_links from design
         description: design.description || '',
         licenseType: design.licenseType || 'Commercial',
         isPremium: design.isPremium || false,
@@ -393,10 +420,12 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
 
       setSelectedCategories(categories);
       setTagsInput(design.tags ? design.tags.join(', ') : '');
+      setWebLinksInput(design.web_links ? design.web_links.join(', ') : ''); // Initialize webLinksInput
       setExistingImages(design.imageUrls || []);
       setNewImages([]);
 
       console.log('EditDesignModal - Form initialized with discount percentage:', design.discountPrice);
+      console.log('EditDesignModal - Form initialized with web_links:', design.web_links);
     }
   }, [design]);
 
@@ -516,8 +545,10 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
 
     if (!design) return;
 
-    console.log('EditDesignModal - Form submission started');
+    console.log('=== EDIT DESIGN - FORM SUBMISSION STARTED ===');
     console.log('EditDesignModal - Current formData.discountPrice:', formData.discountPrice);
+    console.log('EditDesignModal - Tags input:', tagsInput);
+    console.log('EditDesignModal - Web links input:', webLinksInput);
 
     // Check only mandatory fields
     if (!formData.designName || !formData.category || !formData.subcategory || !formData.price) {
@@ -548,6 +579,11 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
 
     // Process tags - split by comma and clean up
     const tags = tagsInput.split(',').map(tag => tag.trim()).filter(Boolean);
+    console.log('EditDesignModal - Parsed tags:', tags);
+    
+    // Process web_links - split by comma and clean up
+    const web_links = webLinksInput.split(',').map(link => link.trim()).filter(Boolean);
+    console.log('EditDesignModal - Parsed web_links:', web_links);
 
     // Process available colors - ensure it's an array
     let availableColors = [];
@@ -582,6 +618,7 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
       discountPrice: cleanDiscountPrice, // Send 0 when no discount, backend should handle this
       availableColors: availableColors,
       tags: tags,
+      web_links: web_links, // Added web_links to designData
       description: formData.description || '',
       licenseType: formData.licenseType || 'Commercial',
       isPremium: Boolean(formData.isPremium),
@@ -590,7 +627,9 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
       designedBy: formData.designedBy || ''
     };
 
-    console.log('EditDesignModal - Submitting data (backend format):', JSON.stringify(designData, null, 2));
+    console.log('=== EDIT DESIGN - FINAL PAYLOAD TO BACKEND ===');
+    console.log(JSON.stringify(designData, null, 2));
+    console.log('=== PAYLOAD END ===');
 
     // Create FormData for multipart request
     const formDataToSend = new FormData();
@@ -664,7 +703,10 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
                   <Input
                     id="edit-designName"
                     value={formData.designName}
-                    onChange={(e) => setFormData(prev => ({ ...prev, designName: e.target.value }))}
+                    onChange={(e) => {
+                      console.log('Design name changed:', e.target.value);
+                      setFormData(prev => ({ ...prev, designName: e.target.value }));
+                    }}
                     placeholder="Enter design name"
                     required
                   />
@@ -717,7 +759,10 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
                   <Input
                     id="edit-designedBy"
                     value={formData.designedBy}
-                    onChange={(e) => setFormData(prev => ({ ...prev, designedBy: e.target.value }))}
+                    onChange={(e) => {
+                      console.log('Designer changed:', e.target.value);
+                      setFormData(prev => ({ ...prev, designedBy: e.target.value }));
+                    }}
                     placeholder="Designer name"
                   />
                 </div>
@@ -727,7 +772,10 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
                   <Textarea
                     id="edit-description"
                     value={formData.description}
-                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    onChange={(e) => {
+                      console.log('Description changed:', e.target.value);
+                      setFormData(prev => ({ ...prev, description: e.target.value }));
+                    }}
                     placeholder="Describe your design..."
                     rows={3}
                   />
@@ -752,7 +800,11 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
                     step="0.01"
                     min="0.01"
                     value={formData.price || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
+                    onChange={(e) => {
+                      const newPrice = parseFloat(e.target.value) || 0;
+                      console.log('Price changed:', newPrice);
+                      setFormData(prev => ({ ...prev, price: newPrice }));
+                    }}
                     placeholder="2500"
                     required
                   />
@@ -841,7 +893,10 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
                   <Label htmlFor="edit-licenseType">License Type</Label>
                   <Select
                     value={formData.licenseType}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, licenseType: value }))}
+                    onValueChange={(value) => {
+                      console.log('License type changed:', value);
+                      setFormData(prev => ({ ...prev, licenseType: value }));
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -863,9 +918,10 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
                       <Checkbox
                         id="edit-isPremium"
                         checked={formData.isPremium}
-                        onCheckedChange={(checked) =>
-                          setFormData(prev => ({ ...prev, isPremium: !!checked }))
-                        }
+                        onCheckedChange={(checked) => {
+                          console.log('Premium status changed:', checked);
+                          setFormData(prev => ({ ...prev, isPremium: !!checked }));
+                        }}
                       />
                       <Label htmlFor="edit-isPremium" className="flex items-center space-x-2 cursor-pointer">
                         <Crown className="w-4 h-4 text-warning" />
@@ -877,9 +933,10 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
                       <Checkbox
                         id="edit-isTrending"
                         checked={formData.isTrending}
-                        onCheckedChange={(checked) =>
-                          setFormData(prev => ({ ...prev, isTrending: !!checked }))
-                        }
+                        onCheckedChange={(checked) => {
+                          console.log('Trending status changed:', checked);
+                          setFormData(prev => ({ ...prev, isTrending: !!checked }));
+                        }}
                       />
                       <Label htmlFor="edit-isTrending" className="flex items-center space-x-2 cursor-pointer">
                         <TrendingUp className="w-4 h-4 text-success" />
@@ -891,9 +948,10 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
                       <Checkbox
                         id="edit-isNewArrival"
                         checked={formData.isNewArrival}
-                        onCheckedChange={(checked) =>
-                          setFormData(prev => ({ ...prev, isNewArrival: !!checked }))
-                        }
+                        onCheckedChange={(checked) => {
+                          console.log('New arrival status changed:', checked);
+                          setFormData(prev => ({ ...prev, isNewArrival: !!checked }));
+                        }}
                       />
                       <Label htmlFor="edit-isNewArrival" className="flex items-center space-x-2 cursor-pointer">
                         <Sparkles className="w-4 h-4 text-accent" />
@@ -1006,12 +1064,12 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
             </CardContent>
           </Card>
 
-          {/* Tags & Colors */}
+          {/* Tags, Web Links & Colors */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Tags className="w-5 h-5" />
-                <span>Tags & Colors</span>
+                <span>Tags, Web Links & Colors</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -1020,11 +1078,34 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
                 <Input
                   id="edit-tags"
                   value={tagsInput}
-                  onChange={(e) => setTagsInput(e.target.value)}
+                  onChange={(e) => {
+                    console.log('Tags input changed:', e.target.value);
+                    setTagsInput(e.target.value);
+                  }}
                   placeholder="modern, trendy, abstract (comma separated)"
                 />
                 <p className="text-sm text-muted-foreground">
                   Separate tags with commas
+                </p>
+              </div>
+
+              {/* Web Links Section - Added below tags */}
+              <div className="space-y-2">
+                <Label htmlFor="edit-webLinks" className="flex items-center space-x-2">
+                  <Link2 className="w-4 h-4" />
+                  <span>Web Links</span>
+                </Label>
+                <Input
+                  id="edit-webLinks"
+                  value={webLinksInput}
+                  onChange={(e) => {
+                    console.log('Web links input changed:', e.target.value);
+                    setWebLinksInput(e.target.value);
+                  }}
+                  placeholder="https://example.com, https://portfolio.com (comma separated)"
+                />
+                <p className="text-sm text-muted-foreground">
+                  Separate web links with commas
                 </p>
               </div>
 
