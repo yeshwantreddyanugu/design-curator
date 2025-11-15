@@ -225,7 +225,7 @@ const Index = () => {
               Aza Arts Admin
             </h1>
             <p className="text-gray-600">
-              {step === 'email' ? 'Sign in to continue' : 'Enter verification code'}
+              {step === 'email' ? 'Sign in to-continue' : 'Enter verification code'}
             </p>
           </div>
 
