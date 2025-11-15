@@ -24,6 +24,7 @@ export interface Design {
   designedBy: string;
   createdAt: string;
   updatedAt: string;
+   web_links?: string[]; 
 }
 
 export interface DesignStats {
@@ -51,6 +52,7 @@ export interface CreateDesignRequest {
   isTrending: boolean;
   isNewArrival: boolean;
   designedBy: string;
+  web_links?: string[];   
 }
 
 export interface ApiResponse<T> {
