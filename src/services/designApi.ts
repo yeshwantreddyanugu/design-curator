@@ -25,6 +25,7 @@ export interface Design {
   createdAt: string;
   updatedAt: string;
    web_links?: string[]; 
+   fileSizeBytes:number;
 }
 
 export interface DesignStats {
@@ -52,7 +53,10 @@ export interface CreateDesignRequest {
   isTrending: boolean;
   isNewArrival: boolean;
   designedBy: string;
-  web_links?: string[];   
+  web_links?: string[];
+  fileSizePx?: string;     
+  fileSizeCm?: string;      
+  dpi?: number;            
 }
 
 export interface ApiResponse<T> {
