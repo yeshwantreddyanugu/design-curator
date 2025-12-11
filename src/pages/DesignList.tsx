@@ -72,7 +72,9 @@ import {
   AlertTriangle,
   Info,
   Percent,
-  Link2
+  Link2,
+  File,
+  Maximize2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -84,7 +86,9 @@ const CATEGORIES = [
   'Kidswear',
   'Swimwear',
   'Activewear',
-  'Archive'
+  'Archive',
+  'Graphics',
+  'Backgrounds'
 ];
 
 const SUBCATEGORIES = [
@@ -105,7 +109,8 @@ const SUBCATEGORIES = [
   'Traditional',
   'Texture',
   'Animal Skins',
-  'Border'
+  'Border',
+  'Backgrounds'
 ];
 
 const LICENSE_TYPES = ['Personal', 'Commercial', 'Extended'];
@@ -115,7 +120,6 @@ const AVAILABLE_COLORS = [
 ];
 
 // Helper function to format price with rupee symbol
-// discountPrice is stored as PERCENTAGE in the backend
 const formatPriceWithRupee = (price: number, discountPercent?: number | null) => {
   const formatNumber = (num: number) => `₹${num.toFixed(2)}`;
   
@@ -140,11 +144,18 @@ const formatPriceWithRupee = (price: number, discountPercent?: number | null) =>
   };
 };
 
+// Helper function to format file size
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+};
+
 // View Design Modal Component
 function ViewDesignModal({ design, open, onOpenChange }: { design: Design | null; open: boolean; onOpenChange: (open: boolean) => void }) {
   if (!design) return null;
-
-  console.log('ViewDesignModal - Design data:', design);
 
   const pricing = formatPriceWithRupee(design.price, design.discountPrice);
 
@@ -270,6 +281,54 @@ function ViewDesignModal({ design, open, onOpenChange }: { design: Design | null
             </div>
           </div>
 
+          {/* File Information - NEW SECTION */}
+          {(design.fileSizePx || design.fileSizeCm || design.dpi || design.includedFiles || design.fileSizeBytes) && (
+            <div className="space-y-4">
+              <h3 className="font-medium flex items-center space-x-2">
+                <File className="w-4 h-4" />
+                <span>File Information</span>
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {design.fileSizePx && (
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                      <Maximize2 className="w-3 h-3" />
+                      Dimensions (Pixels)
+                    </Label>
+                    <p className="text-foreground font-mono">{design.fileSizePx}</p>
+                  </div>
+                )}
+                {design.fileSizeCm && (
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                      <Maximize2 className="w-3 h-3" />
+                      Dimensions (cm)
+                    </Label>
+                    <p className="text-foreground font-mono">{design.fileSizeCm}</p>
+                  </div>
+                )}
+                {design.dpi && (
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">DPI</Label>
+                    <p className="text-foreground font-mono">{design.dpi}</p>
+                  </div>
+                )}
+                {design.includedFiles && (
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Included Files</Label>
+                    <p className="text-foreground">{design.includedFiles}</p>
+                  </div>
+                )}
+                {design.fileSizeBytes && (
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">File Size</Label>
+                    <p className="text-foreground font-mono">{formatFileSize(design.fileSizeBytes)}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Tags & Colors */}
           <div className="space-y-4">
             <h3 className="font-medium flex items-center space-x-2">
@@ -307,15 +366,16 @@ function ViewDesignModal({ design, open, onOpenChange }: { design: Design | null
                 <Link2 className="w-4 h-4" />
                 <span>Web Links</span>
               </h3>
-              <div className="flex flex-wrap gap-1">
+              <div className="flex flex-col gap-2">
                 {design.web_links.map((link, index) => (
                   <a
                     key={index}
                     href={link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-primary hover:underline"
+                    className="text-sm text-primary hover:underline flex items-center gap-1"
                   >
+                    <Link2 className="w-3 h-3" />
                     {link}
                   </a>
                 ))}
@@ -353,21 +413,27 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
     category: '',
     subcategory: '',
     price: 0,
-    discountPrice: 0, // This will be stored as PERCENTAGE
+    discountPrice: 0,
     availableColors: [] as string[],
     tags: [] as string[],
-    web_links: [] as string[], // Added web_links field
+    web_links: [] as string[],
     description: '',
     licenseType: 'Commercial',
     isPremium: false,
     isTrending: false,
     isNewArrival: false,
     designedBy: '',
+    // NEW FIELDS
+    fileSizePx: '',
+    fileSizeCm: '',
+    dpi: 0,
+    includedFiles: '',
+    fileSizeBytes: 0,
   });
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [tagsInput, setTagsInput] = useState('');
-  const [webLinksInput, setWebLinksInput] = useState(''); // Added webLinksInput state
+  const [webLinksInput, setWebLinksInput] = useState('');
   const [existingImages, setExistingImages] = useState<string[]>([]);
   const [newImages, setNewImages] = useState<{ file: File; preview: string }[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -396,9 +462,6 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
   // Initialize form data when design changes
   React.useEffect(() => {
     if (design) {
-      console.log('EditDesignModal - Initializing with design:', design);
-
-      // Parse categories if they are comma-separated
       const categories = design.category ? design.category.split(',').map(c => c.trim()) : [];
 
       setFormData({
@@ -406,31 +469,33 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
         category: design.category || '',
         subcategory: design.subcategory || '',
         price: design.price || 0,
-        discountPrice: design.discountPrice || 0, // This is already a percentage from backend
+        discountPrice: design.discountPrice || 0,
         availableColors: design.availableColors || [],
         tags: design.tags || [],
-        web_links: design.web_links || [], // Initialize web_links from design
+        web_links: design.web_links || [],
         description: design.description || '',
         licenseType: design.licenseType || 'Commercial',
         isPremium: design.isPremium || false,
         isTrending: design.isTrending || false,
         isNewArrival: design.isNewArrival || false,
         designedBy: design.designedBy || '',
+        // NEW FIELDS
+        fileSizePx: design.fileSizePx || '',
+        fileSizeCm: design.fileSizeCm || '',
+        dpi: design.dpi || 0,
+        includedFiles: design.includedFiles || '',
+        fileSizeBytes: design.fileSizeBytes || 0,
       });
 
       setSelectedCategories(categories);
       setTagsInput(design.tags ? design.tags.join(', ') : '');
-      setWebLinksInput(design.web_links ? design.web_links.join(', ') : ''); // Initialize webLinksInput
+      setWebLinksInput(design.web_links ? design.web_links.join(', ') : '');
       setExistingImages(design.imageUrls || []);
       setNewImages([]);
-
-      console.log('EditDesignModal - Form initialized with discount percentage:', design.discountPrice);
-      console.log('EditDesignModal - Form initialized with web_links:', design.web_links);
     }
   }, [design]);
 
   const handleImageUpload = async (files: FileList) => {
-    console.log('EditDesignModal - Uploading new images:', files.length);
     setIsUploading(true);
     const newImageFiles: { file: File; preview: string }[] = [];
 
@@ -464,16 +529,9 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
     }
 
     setIsUploading(false);
-    console.log('EditDesignModal - New images added:', newImageFiles.length);
-  };
-
-  const removeExistingImage = (index: number) => {
-    console.log('EditDesignModal - Removing existing image at index:', index);
-    setExistingImages(prev => prev.filter((_, i) => i !== index));
   };
 
   const removeNewImage = (index: number) => {
-    console.log('EditDesignModal - Removing new image at index:', index);
     setNewImages(prev => {
       const newImagesCopy = [...prev];
       URL.revokeObjectURL(newImagesCopy[index].preview);
@@ -485,7 +543,6 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) => designApi.updateDesign(id, data),
     onSuccess: () => {
-      console.log('EditDesignModal - Update successful');
       queryClient.invalidateQueries({ queryKey: ['designs'] });
       queryClient.invalidateQueries({ queryKey: ['design-stats'] });
       toast({
@@ -495,7 +552,6 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
       onOpenChange(false);
     },
     onError: (error) => {
-      console.error('EditDesignModal - Update failed:', error);
       toast({
         title: "Error",
         description: "Failed to update design. Please try again.",
@@ -505,25 +561,21 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
   });
 
   const handleCategoryToggle = (category: string) => {
-    console.log('EditDesignModal - Category toggle:', category);
     setSelectedCategories(prev => {
       const newCategories = prev.includes(category)
         ? prev.filter(c => c !== category)
         : [...prev, category];
 
-      // Update formData with comma-separated string
       setFormData(prevData => ({
         ...prevData,
         category: newCategories.join(', ')
       }));
 
-      console.log('EditDesignModal - Updated categories:', newCategories);
       return newCategories;
     });
   };
 
   const handleSubcategorySelect = (subcategory: string) => {
-    console.log('EditDesignModal - Subcategory selected:', subcategory);
     setFormData(prev => ({
       ...prev,
       subcategory: subcategory
@@ -531,7 +583,6 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
   };
 
   const handleColorToggle = (color: string) => {
-    console.log('EditDesignModal - Color toggle:', color);
     setFormData(prev => ({
       ...prev,
       availableColors: prev.availableColors.includes(color)
@@ -545,20 +596,7 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
 
     if (!design) return;
 
-    console.log('=== EDIT DESIGN - FORM SUBMISSION STARTED ===');
-    console.log('EditDesignModal - Current formData.discountPrice:', formData.discountPrice);
-    console.log('EditDesignModal - Tags input:', tagsInput);
-    console.log('EditDesignModal - Web links input:', webLinksInput);
-
-    // Check only mandatory fields
     if (!formData.designName || !formData.category || !formData.subcategory || !formData.price) {
-      console.log('EditDesignModal - Validation failed:', {
-        designName: formData.designName,
-        category: formData.category,
-        subcategory: formData.subcategory,
-        price: formData.price
-      });
-
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields: Design Name, Category, Subcategory, and Price.",
@@ -567,7 +605,6 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
       return;
     }
 
-    // Validate discount percentage
     if (formData.discountPrice < 0 || formData.discountPrice >= 100) {
       toast({
         title: "Invalid Discount",
@@ -577,21 +614,14 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
       return;
     }
 
-    // Process tags - split by comma and clean up
     const tags = tagsInput.split(',').map(tag => tag.trim()).filter(Boolean);
-    console.log('EditDesignModal - Parsed tags:', tags);
-    
-    // Process web_links - split by comma and clean up
     const web_links = webLinksInput.split(',').map(link => link.trim()).filter(Boolean);
-    console.log('EditDesignModal - Parsed web_links:', web_links);
 
-    // Process available colors - ensure it's an array
     let availableColors = [];
     if (formData.availableColors) {
       if (Array.isArray(formData.availableColors)) {
         availableColors = formData.availableColors;
       } else if (typeof formData.availableColors === 'string') {
-        // If it's a string, split by comma
         availableColors = (formData.availableColors as string)
           .split(',')
           .map(color => color.trim())
@@ -599,77 +629,52 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
       }
     }
 
-    // FIXED: Properly handle discount price conversion to null when 0
-    // Convert to number first, then check if it's valid
     const discountValue = Number(formData.discountPrice);
     const cleanDiscountPrice = (discountValue > 0 && discountValue < 100) ? discountValue : 0;
-
-    console.log('EditDesignModal - Discount value processing:', {
-      rawValue: formData.discountPrice,
-      numberValue: discountValue,
-      cleanValue: cleanDiscountPrice
-    });
 
     const designData = {
       designName: formData.designName,
       category: formData.category,
       subcategory: formData.subcategory,
       price: Number(formData.price),
-      discountPrice: cleanDiscountPrice, // Send 0 when no discount, backend should handle this
+      discountPrice: cleanDiscountPrice,
       availableColors: availableColors,
       tags: tags,
-      web_links: web_links, // Added web_links to designData
+      web_links: web_links,
       description: formData.description || '',
       licenseType: formData.licenseType || 'Commercial',
       isPremium: Boolean(formData.isPremium),
       isTrending: Boolean(formData.isTrending),
       isNewArrival: Boolean(formData.isNewArrival),
-      designedBy: formData.designedBy || ''
+      designedBy: formData.designedBy || '',
+      // NEW FIELDS
+      fileSizePx: formData.fileSizePx || '',
+      fileSizeCm: formData.fileSizeCm || '',
+      dpi: Number(formData.dpi) || 0,
+      includedFiles: formData.includedFiles || '',
+      fileSizeBytes: Number(formData.fileSizeBytes) || 0,
     };
 
-    console.log('=== EDIT DESIGN - FINAL PAYLOAD TO BACKEND ===');
-    console.log(JSON.stringify(designData, null, 2));
-    console.log('=== PAYLOAD END ===');
-
-    // Create FormData for multipart request
     const formDataToSend = new FormData();
-
-    // Add design data as JSON string
     formDataToSend.append('designData', JSON.stringify(designData));
 
-    // Add new image files if any
     if (newImages.length > 0) {
-      newImages.forEach((image, index) => {
+      newImages.forEach((image) => {
         formDataToSend.append('files', image.file);
       });
-      console.log('EditDesignModal - Added new images to form data:', newImages.length);
     }
 
-    // Add existing image URLs to preserve them
     if (existingImages.length > 0) {
       formDataToSend.append('existingImages', JSON.stringify(existingImages));
-      console.log('EditDesignModal - Added existing images to form data:', existingImages.length);
-    }
-
-    // Log FormData contents for debugging
-    console.log('EditDesignModal - FormData contents:');
-    for (let [key, value] of formDataToSend.entries()) {
-      if (value instanceof File) {
-        console.log(`${key}: File(${value.name}, ${value.size} bytes)`);
-      } else {
-        console.log(`${key}: ${value}`);
-      }
     }
 
     try {
-      // Call the API with FormData instead of JSON
       await updateMutation.mutateAsync({
         id: design.id,
-        data: formDataToSend, // Send FormData instead of JSON object
+        data: formDataToSend,
       });
     } catch (error) {
-      console.error('EditDesignModal - Submit error:', error);
-      // Error handling is already done in the mutation's onError callback
+      console.error('Edit submit error:', error);
     }
   };
 
@@ -703,10 +708,7 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
                   <Input
                     id="edit-designName"
                     value={formData.designName}
-                    onChange={(e) => {
-                      console.log('Design name changed:', e.target.value);
-                      setFormData(prev => ({ ...prev, designName: e.target.value }));
-                    }}
+                    onChange={(e) => setFormData(prev => ({ ...prev, designName: e.target.value }))}
                     placeholder="Enter design name"
                     required
                   />
@@ -759,10 +761,7 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
                   <Input
                     id="edit-designedBy"
                     value={formData.designedBy}
-                    onChange={(e) => {
-                      console.log('Designer changed:', e.target.value);
-                      setFormData(prev => ({ ...prev, designedBy: e.target.value }));
-                    }}
+                    onChange={(e) => setFormData(prev => ({ ...prev, designedBy: e.target.value }))}
                     placeholder="Designer name"
                   />
                 </div>
@@ -772,10 +771,7 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
                   <Textarea
                     id="edit-description"
                     value={formData.description}
-                    onChange={(e) => {
-                      console.log('Description changed:', e.target.value);
-                      setFormData(prev => ({ ...prev, description: e.target.value }));
-                    }}
+                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                     placeholder="Describe your design..."
                     rows={3}
                   />
@@ -800,11 +796,7 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
                     step="0.01"
                     min="0.01"
                     value={formData.price || ''}
-                    onChange={(e) => {
-                      const newPrice = parseFloat(e.target.value) || 0;
-                      console.log('Price changed:', newPrice);
-                      setFormData(prev => ({ ...prev, price: newPrice }));
-                    }}
+                    onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
                     placeholder="2500"
                     required
                   />
@@ -824,28 +816,16 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
                     value={formData.discountPrice === 0 ? '' : formData.discountPrice}
                     onChange={(e) => {
                       const inputValue = e.target.value;
-                      console.log('Discount input changed:', inputValue);
-                      
-                      // Handle empty string (when user clears the field)
-                      if (inputValue === '' || inputValue === null || inputValue === undefined) {
-                        console.log('Setting discount to 0 (empty field)');
+                      if (inputValue === '') {
                         setFormData(prev => ({ ...prev, discountPrice: 0 }));
                         return;
                       }
-                      
-                      // Parse the value
                       const numValue = parseFloat(inputValue);
-                      
-                      // Handle invalid numbers (NaN)
                       if (isNaN(numValue)) {
-                        console.log('Invalid number, setting to 0');
                         setFormData(prev => ({ ...prev, discountPrice: 0 }));
                         return;
                       }
-                      
-                      // Clamp between 0 and 99
                       const clampedValue = Math.min(Math.max(numValue, 0), 99);
-                      console.log('Setting discount to:', clampedValue);
                       setFormData(prev => ({ ...prev, discountPrice: clampedValue }));
                     }}
                     placeholder="0"
@@ -893,10 +873,7 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
                   <Label htmlFor="edit-licenseType">License Type</Label>
                   <Select
                     value={formData.licenseType}
-                    onValueChange={(value) => {
-                      console.log('License type changed:', value);
-                      setFormData(prev => ({ ...prev, licenseType: value }));
-                    }}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, licenseType: value }))}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -918,10 +895,7 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
                       <Checkbox
                         id="edit-isPremium"
                         checked={formData.isPremium}
-                        onCheckedChange={(checked) => {
-                          console.log('Premium status changed:', checked);
-                          setFormData(prev => ({ ...prev, isPremium: !!checked }));
-                        }}
+                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isPremium: !!checked }))}
                       />
                       <Label htmlFor="edit-isPremium" className="flex items-center space-x-2 cursor-pointer">
                         <Crown className="w-4 h-4 text-warning" />
@@ -933,10 +907,7 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
                       <Checkbox
                         id="edit-isTrending"
                         checked={formData.isTrending}
-                        onCheckedChange={(checked) => {
-                          console.log('Trending status changed:', checked);
-                          setFormData(prev => ({ ...prev, isTrending: !!checked }));
-                        }}
+                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isTrending: !!checked }))}
                       />
                       <Label htmlFor="edit-isTrending" className="flex items-center space-x-2 cursor-pointer">
                         <TrendingUp className="w-4 h-4 text-success" />
@@ -948,10 +919,7 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
                       <Checkbox
                         id="edit-isNewArrival"
                         checked={formData.isNewArrival}
-                        onCheckedChange={(checked) => {
-                          console.log('New arrival status changed:', checked);
-                          setFormData(prev => ({ ...prev, isNewArrival: !!checked }));
-                        }}
+                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isNewArrival: !!checked }))}
                       />
                       <Label htmlFor="edit-isNewArrival" className="flex items-center space-x-2 cursor-pointer">
                         <Sparkles className="w-4 h-4 text-accent" />
@@ -964,6 +932,86 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
             </Card>
           </div>
 
+          {/* NEW SECTION: File Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <File className="w-5 h-5" />
+                <span>File Information</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-fileSizePx" className="flex items-center gap-1">
+                    <Maximize2 className="w-3 h-3" />
+                    Dimensions (Pixels)
+                  </Label>
+                  <Input
+                    id="edit-fileSizePx"
+                    value={formData.fileSizePx}
+                    onChange={(e) => setFormData(prev => ({ ...prev, fileSizePx: e.target.value }))}
+                    placeholder="8000x3000"
+                  />
+                  <p className="text-xs text-muted-foreground">Format: WIDTHxHEIGHT (e.g., 8000x3000)</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-fileSizeCm" className="flex items-center gap-1">
+                    <Maximize2 className="w-3 h-3" />
+                    Dimensions (cm)
+                  </Label>
+                  <Input
+                    id="edit-fileSizeCm"
+                    value={formData.fileSizeCm}
+                    onChange={(e) => setFormData(prev => ({ ...prev, fileSizeCm: e.target.value }))}
+                    placeholder="801.6x127"
+                  />
+                  <p className="text-xs text-muted-foreground">Format: WIDTHxHEIGHT (e.g., 801.6x127)</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-dpi">DPI (Dots Per Inch)</Label>
+                  <Input
+                    id="edit-dpi"
+                    type="number"
+                    min="0"
+                    value={formData.dpi || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, dpi: parseInt(e.target.value) || 0 }))}
+                    placeholder="300"
+                  />
+                  <p className="text-xs text-muted-foreground">Resolution (e.g., 300, 600, 800)</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-includedFiles">Included File Types</Label>
+                  <Input
+                    id="edit-includedFiles"
+                    value={formData.includedFiles}
+                    onChange={(e) => setFormData(prev => ({ ...prev, includedFiles: e.target.value }))}
+                    placeholder="PNG, JPG, PSD, AI, EPS"
+                  />
+                  <p className="text-xs text-muted-foreground">Comma-separated file types</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-fileSizeBytes">File Size (Bytes)</Label>
+                  <Input
+                    id="edit-fileSizeBytes"
+                    type="number"
+                    min="0"
+                    value={formData.fileSizeBytes || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, fileSizeBytes: parseInt(e.target.value) || 0 }))}
+                    placeholder="5242880"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {formData.fileSizeBytes > 0 ? `≈ ${formatFileSize(formData.fileSizeBytes)}` : 'File size in bytes'}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Images Management */}
           <Card>
             <CardHeader>
@@ -974,12 +1022,11 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
               {existingImages.length > 0 && newImages.length === 0 && (
                 <div className="bg-amber-100 border border-amber-300 text-amber-800 px-3 py-2 rounded-md text-sm">
                   <AlertTriangle className="w-4 h-4 inline mr-2" />
-                  Warning: All current images will be removed. Adding atleast one image is mandatory
+                  Warning: All current images will be removed. Adding at least one image is mandatory
                 </div>
               )}
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* New Images Only */}
               {newImages.length > 0 && (
                 <div className="space-y-3">
                   <Label className="text-sm font-medium">New Images (Will Replace All Current Images)</Label>
@@ -1011,7 +1058,6 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
                 </div>
               )}
 
-              {/* Add Images */}
               {newImages.length < 6 && (
                 <div
                   className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer"
@@ -1039,7 +1085,6 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
                 </div>
               )}
 
-              {/* Current Images Info */}
               {existingImages.length > 0 && (
                 <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
                   <div className="flex items-start space-x-2">
@@ -1047,9 +1092,6 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
                     <div className="text-sm text-blue-800">
                       <p className="font-medium">Current Images: {existingImages.length}</p>
                       <p>All current images will be removed unless you add new ones.</p>
-                      <p className="text-xs mt-1">
-                        To keep current images, you must re-upload them as new images.
-                      </p>
                     </div>
                   </div>
                 </div>
@@ -1078,10 +1120,7 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
                 <Input
                   id="edit-tags"
                   value={tagsInput}
-                  onChange={(e) => {
-                    console.log('Tags input changed:', e.target.value);
-                    setTagsInput(e.target.value);
-                  }}
+                  onChange={(e) => setTagsInput(e.target.value)}
                   placeholder="modern, trendy, abstract (comma separated)"
                 />
                 <p className="text-sm text-muted-foreground">
@@ -1089,7 +1128,6 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
                 </p>
               </div>
 
-              {/* Web Links Section - Added below tags */}
               <div className="space-y-2">
                 <Label htmlFor="edit-webLinks" className="flex items-center space-x-2">
                   <Link2 className="w-4 h-4" />
@@ -1098,10 +1136,7 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
                 <Input
                   id="edit-webLinks"
                   value={webLinksInput}
-                  onChange={(e) => {
-                    console.log('Web links input changed:', e.target.value);
-                    setWebLinksInput(e.target.value);
-                  }}
+                  onChange={(e) => setWebLinksInput(e.target.value)}
                   placeholder="https://example.com, https://portfolio.com (comma separated)"
                 />
                 <p className="text-sm text-muted-foreground">
@@ -1145,6 +1180,8 @@ function EditDesignModal({ design, open, onOpenChange }: { design: Design | null
     </Dialog>
   );
 }
+
+
 
 export default function DesignList() {
   const [searchTerm, setSearchTerm] = useState('');
