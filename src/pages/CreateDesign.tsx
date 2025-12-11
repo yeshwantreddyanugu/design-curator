@@ -33,17 +33,17 @@ import {
   TrendingUp,
   Sparkles,
   Plus,
-  Link2
+  Link2,
+  Ruler,
+  ImageIcon
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
 
 interface ImageFile {
   file: File;
   preview: string;
   dimensions?: { width: number; height: number };
 }
-
 
 const CATEGORIES = [
   'Womenswear',
@@ -55,7 +55,6 @@ const CATEGORIES = [
   'Activewear',
   'Archive'
 ];
-
 
 const SUBCATEGORIES = [
   'Floral',
@@ -78,13 +77,11 @@ const SUBCATEGORIES = [
   'Border'
 ];
 
-
 const LICENSE_TYPES = ['Personal', 'Commercial', 'Extended'];
 const AVAILABLE_COLORS = [
   'Red', 'Blue', 'Black', 'White', 'Green',
   'Yellow', 'Purple', 'Pink', 'Orange', 'Gray'
 ];
-
 
 export default function CreateDesign() {
   const [formData, setFormData] = useState<CreateDesignRequest>({
@@ -101,9 +98,11 @@ export default function CreateDesign() {
     isTrending: false,
     isNewArrival: false,
     designedBy: '',
-    web_links: [], // Added webLinks field
+    web_links: [],
+    fileSizePx: '', 
+    fileSizeCm: '', 
+    dpi: 0, 
   });
-
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [customCategories, setCustomCategories] = useState<string[]>([]);
@@ -111,7 +110,7 @@ export default function CreateDesign() {
   const [customColors, setCustomColors] = useState<string[]>([]);
   const [images, setImages] = useState<ImageFile[]>([]);
   const [tagsInput, setTagsInput] = useState('');
-  const [webLinksInput, setWebLinksInput] = useState(''); // Added webLinks input state
+  const [webLinksInput, setWebLinksInput] = useState('');
   const [isUploading, setIsUploading] = useState(false);
 
   // Input states for custom additions
@@ -119,11 +118,9 @@ export default function CreateDesign() {
   const [newSubcategoryInput, setNewSubcategoryInput] = useState('');
   const [newColorInput, setNewColorInput] = useState('');
 
-
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-
 
   const createMutation = useMutation({
     mutationFn: ({ designData, imageFiles }: { designData: CreateDesignRequest; imageFiles: File[] }) =>
@@ -147,11 +144,9 @@ export default function CreateDesign() {
     },
   });
 
-
   const handleImageUpload = async (files: FileList) => {
     setIsUploading(true);
     const newImages: ImageFile[] = [];
-
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
@@ -162,11 +157,9 @@ export default function CreateDesign() {
       }
     }
 
-
     setImages(prev => [...prev, ...newImages].slice(0, 6)); // Max 6 images
     setIsUploading(false);
   };
-
 
   const removeImage = (index: number) => {
     console.log('Removing image at index:', index);
@@ -178,7 +171,6 @@ export default function CreateDesign() {
     });
   };
 
-
   // Enhanced color toggle to handle both predefined and custom colors
   const handleColorToggle = (color: string) => {
     console.log('Toggling color:', color);
@@ -189,7 +181,6 @@ export default function CreateDesign() {
         : [...prev.availableColors, color],
     }));
   };
-
 
   // Enhanced category toggle to handle both predefined and custom categories
   const handleCategoryToggle = (category: string) => {
@@ -211,7 +202,6 @@ export default function CreateDesign() {
     });
   };
 
-
   // Enhanced subcategory select to handle both predefined and custom subcategories
   const handleSubcategorySelect = (subcategory: string) => {
     console.log('Selecting subcategory:', subcategory);
@@ -220,7 +210,6 @@ export default function CreateDesign() {
       subcategory: subcategory
     }));
   };
-
 
   // Add custom category
   const handleAddCustomCategory = () => {
@@ -242,7 +231,6 @@ export default function CreateDesign() {
       });
     }
   };
-
 
   // Add custom subcategory (replaces if one exists)
   const handleAddCustomSubcategory = () => {
@@ -267,7 +255,6 @@ export default function CreateDesign() {
     }
   };
 
-
   // Add custom color
   const handleAddCustomColor = () => {
     if (newColorInput.trim() && !getAllColors().includes(newColorInput.trim())) {
@@ -289,12 +276,10 @@ export default function CreateDesign() {
     }
   };
 
-
   // Helper functions to get all categories, subcategories, and colors
   const getAllCategories = () => [...CATEGORIES, ...customCategories];
   const getAllSubcategories = () => [...SUBCATEGORIES, ...customSubcategories];
   const getAllColors = () => [...AVAILABLE_COLORS, ...customColors];
-
 
   // Remove custom category
   const removeCustomCategory = (category: string) => {
@@ -307,7 +292,6 @@ export default function CreateDesign() {
     }));
   };
 
-
   // Remove custom subcategory
   const removeCustomSubcategory = (subcategory: string) => {
     console.log('Removing custom subcategory:', subcategory);
@@ -316,7 +300,6 @@ export default function CreateDesign() {
       setFormData(prev => ({ ...prev, subcategory: '' }));
     }
   };
-
 
   // Remove custom color
   const removeCustomColor = (color: string) => {
@@ -327,7 +310,6 @@ export default function CreateDesign() {
       availableColors: prev.availableColors.filter(c => c !== color)
     }));
   };
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -341,6 +323,9 @@ export default function CreateDesign() {
     console.log('Tags input:', tagsInput);
     console.log('Web links input:', webLinksInput);
     console.log('Number of images:', images.length);
+    console.log('File Size Px:', formData.fileSizePx);
+    console.log('File Size Cm:', formData.fileSizeCm);
+    console.log('DPI:', formData.dpi);
 
     // Check only mandatory fields
     if (!formData.designName || !formData.category || !formData.subcategory || !formData.price || images.length === 0) {
@@ -371,10 +356,13 @@ export default function CreateDesign() {
     const finalFormData = {
       ...formData,
       tags,
-      web_links, // Changed from webLinks to web_links
+      web_links,
       discountPrice: formData.discountPrice || 0,
       designedBy: formData.designedBy || '',
       description: formData.description || '',
+      fileSizePx: formData.fileSizePx || '',
+      fileSizeCm: formData.fileSizeCm || '',
+      dpi: formData.dpi || 0,
     };
 
     console.log('=== FINAL PAYLOAD TO BACKEND ===');
@@ -394,8 +382,6 @@ export default function CreateDesign() {
     });
   };
 
-
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -410,7 +396,6 @@ export default function CreateDesign() {
           <p className="text-muted-foreground">Add a new design to your collection</p>
         </div>
       </div>
-
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -451,7 +436,6 @@ export default function CreateDesign() {
                 </div>
               </div>
 
-
               {/* Enhanced Categories Section */}
               <div className="space-y-4">
                 <Label>Categories * (Select multiple)</Label>
@@ -469,7 +453,6 @@ export default function CreateDesign() {
                     </Badge>
                   ))}
                 </div>
-
 
                 {/* Custom Categories */}
                 {customCategories.length > 0 && (
@@ -503,7 +486,6 @@ export default function CreateDesign() {
                   </div>
                 )}
 
-
                 {/* Add Custom Category */}
                 <div className="flex gap-2">
                   <Input
@@ -522,14 +504,12 @@ export default function CreateDesign() {
                   </Button>
                 </div>
 
-
                 {selectedCategories.length > 0 && (
                   <p className="text-sm text-muted-foreground">
                     Selected: {selectedCategories.join(', ')}
                   </p>
                 )}
               </div>
-
 
               {/* Enhanced Subcategories Section */}
               <div className="space-y-4">
@@ -548,7 +528,6 @@ export default function CreateDesign() {
                     </Badge>
                   ))}
                 </div>
-
 
                 {/* Custom Subcategories */}
                 {customSubcategories.length > 0 && (
@@ -582,7 +561,6 @@ export default function CreateDesign() {
                   </div>
                 )}
 
-
                 {/* Add Custom Subcategory */}
                 <div className="flex gap-2">
                   <Input
@@ -601,14 +579,12 @@ export default function CreateDesign() {
                   </Button>
                 </div>
 
-
                 {formData.subcategory && (
                   <p className="text-sm text-muted-foreground">
                     Selected: {formData.subcategory}
                   </p>
                 )}
               </div>
-
 
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
@@ -625,7 +601,6 @@ export default function CreateDesign() {
               </div>
             </CardContent>
           </Card>
-
 
           {/* Pricing & Options */}
           <Card>
@@ -654,7 +629,6 @@ export default function CreateDesign() {
                 />
               </div>
 
-
               <div className="space-y-2">
                 <Label htmlFor="discountPrice">Discount Price</Label>
                 <Input
@@ -671,7 +645,6 @@ export default function CreateDesign() {
                   placeholder="0"
                 />
               </div>
-
 
               <div className="space-y-2">
                 <Label htmlFor="licenseType">License Type</Label>
@@ -695,7 +668,6 @@ export default function CreateDesign() {
                 </Select>
               </div>
 
-
               <div className="space-y-3">
                 <Label>Status Options</Label>
                 <div className="space-y-3">
@@ -714,7 +686,6 @@ export default function CreateDesign() {
                     </Label>
                   </div>
 
-
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="isTrending"
@@ -729,7 +700,6 @@ export default function CreateDesign() {
                       <span>Trending</span>
                     </Label>
                   </div>
-
 
                   <div className="flex items-center space-x-2">
                     <Checkbox
@@ -751,6 +721,69 @@ export default function CreateDesign() {
           </Card>
         </div>
 
+        {/* NEW SECTION: File Specifications */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Ruler className="w-5 h-5" />
+              <span>File Specifications</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="fileSizePx" className="flex items-center space-x-2">
+                  <ImageIcon className="w-4 h-4" />
+                  <span>File Size (Pixels)</span>
+                </Label>
+                <Input
+                  id="fileSizePx"
+                  value={formData.fileSizePx}
+                  onChange={(e) => {
+                    console.log('File Size Px changed:', e.target.value);
+                    setFormData(prev => ({ ...prev, fileSizePx: e.target.value }));
+                  }}
+                  placeholder="e.g., 8000x3000"
+                />
+                <p className="text-xs text-muted-foreground">Format: widthxheight</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="fileSizeCm" className="flex items-center space-x-2">
+                  <Ruler className="w-4 h-4" />
+                  <span>File Size (CM)</span>
+                </Label>
+                <Input
+                  id="fileSizeCm"
+                  value={formData.fileSizeCm}
+                  onChange={(e) => {
+                    console.log('File Size Cm changed:', e.target.value);
+                    setFormData(prev => ({ ...prev, fileSizeCm: e.target.value }));
+                  }}
+                  placeholder="e.g., 801.6x127"
+                />
+                <p className="text-xs text-muted-foreground">Format: widthxheight in cm</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="dpi">DPI (Resolution)</Label>
+                <Input
+                  id="dpi"
+                  type="number"
+                  min="0"
+                  value={formData.dpi || ''}
+                  onChange={(e) => {
+                    const newDpi = parseInt(e.target.value) || 0;
+                    console.log('DPI changed:', newDpi);
+                    setFormData(prev => ({ ...prev, dpi: newDpi }));
+                  }}
+                  placeholder="e.g., 300 or 800"
+                />
+                <p className="text-xs text-muted-foreground">Dots per inch</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Tags & Web Links & Colors */}
         <Card>
@@ -777,8 +810,7 @@ export default function CreateDesign() {
               </p>
             </div>
 
-
-            {/* Web Links Section - Added below tags */}
+            {/* Web Links Section */}
             <div className="space-y-2">
               <Label htmlFor="webLinks" className="flex items-center space-x-2">
                 <Link2 className="w-4 h-4" />
@@ -798,7 +830,6 @@ export default function CreateDesign() {
               </p>
             </div>
 
-
             {/* Enhanced Available Colors Section */}
             <div className="space-y-4">
               <Label>Available Colors (Select multiple)</Label>
@@ -816,7 +847,6 @@ export default function CreateDesign() {
                   </Badge>
                 ))}
               </div>
-
 
               {/* Custom Colors */}
               {customColors.length > 0 && (
@@ -850,7 +880,6 @@ export default function CreateDesign() {
                 </div>
               )}
 
-
               {/* Add Custom Color */}
               <div className="flex gap-2">
                 <Input
@@ -869,7 +898,6 @@ export default function CreateDesign() {
                 </Button>
               </div>
 
-
               {formData.availableColors.length > 0 && (
                 <p className="text-sm text-muted-foreground">
                   Selected: {formData.availableColors.join(', ')}
@@ -878,7 +906,6 @@ export default function CreateDesign() {
             </div>
           </CardContent>
         </Card>
-
 
         {/* Image Upload */}
         <Card>
@@ -913,11 +940,9 @@ export default function CreateDesign() {
               </p>
             </div>
 
-
             {isUploading && (
               <Progress value={50} className="w-full" />
             )}
-
 
             {images.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -952,7 +977,6 @@ export default function CreateDesign() {
             )}
           </CardContent>
         </Card>
-
 
         {/* Submit Button */}
         <div className="flex justify-end space-x-4">
